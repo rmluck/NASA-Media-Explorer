@@ -67,14 +67,14 @@ def crawl_nasa_api(query: str = "space", max_results: int = 50, save_to_file: bo
     
     # Optionally save the results to a JSON file
     if save_to_file:
-        file_path = os.path.join("data", f"nasa_api_results_{query}.json")
+        file_path = os.path.join("data/nasa_api_results", f"nasa_api_results_{query}.json")
         with open(file_path, "w") as file:
             json.dump(results, file, indent=4)
-        print(f"Results saved to {file_path}")
+        print(f"Results saved to {file_path}.")
 
     # Return the list of results
     return results
 
 if __name__ == "__main__":
     # Example usage
-    crawl_nasa_api("moon", max_results=20, save_to_file=True)
+    crawl_nasa_api("moon", max_results=100, save_to_file=True)
