@@ -6,75 +6,150 @@ Crawler for NASA's API to fetch images and videos.
 import requests
 import json
 import os
+import time
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Define the NASA API URL and API key
 API_URL = "https://images-api.nasa.gov/search"
+API_KEY = os.getenv("NASA_API_KEY")
+
+# Output directory for the crawled data
+OUTPUT_DIR = "data/nasa_full_corpus"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Progress file to track the last crawled year
+PROGRESS_FILE = "data/nasa_crawl_progress.json"
 
 
-def crawl_nasa_api(query: str = "space", max_results: int = 50, save_to_file: bool = False):
+def crawl_nasa_api_by_year(start_year: int = 1920, start_page: int = 1, end_year: int = 2025, delay: int = 5, save_per_year: bool = True):
     """
-    Fetch images and videos from NASA's API based on a query.
+    Crawl the NASA API incrementally by year and save results.
     
     Parameters:
-        query (str): The search term to query NASA's API.
-        max_results (int): The maximum number of results to return.
-        save_to_file (bool): Whether to save the results to a JSON file.
-
-    Returns:
-        list: A list of dictionaries containing metadata about the retrieved images and videos.
+        start_year (int): The starting year for the crawl.
+        start_page (int): The starting page number for the crawl.
+        end_year (int): The ending year for the crawl.
+        delay (int): Delay in seconds between API requests to avoid rate limiting.
+        save_per_year (bool): Whether to save results per year or in a single file.
     """
 
-    # Set up the parameters for the API request
-    parameters = {"q": query, "media_type": "image,video"}
-
-    # Fetch data from the API
-    response = requests.get(API_URL, params=parameters)
-    data = response.json()
-
-    # Check if the response is valid
-    if response.status_code != 200 or "collection" not in data:
-        print("Error fetching data from NASA API")
-        return []
-    
-    # Process the results by extracting relevant fields from each item of the response
+    # Initialize a list to hold the results
     results = []
-    count = 0
-    for item in data.get("collection", {}).get("items", []):
-        # Stop if we have reached the maximum number of results
-        if count >= max_results:
-            break
 
-        # Extract relevant fields from the item
-        metadata = item.get("data", [])[0]
-        links = item.get("links", [{}])
+    # Iterate through each year in the specified range
+    for year in range(start_year, end_year + 1):
+        print(f"Crawling year {year}...")
+        year_results = []
+        page = start_page if year == start_year else 1
 
-        # Add the extracted data to the results list
-        results.append({
-            "nasa_id": metadata.get("nasa_id", ""),
-            "title": metadata.get("title", ""),
-            "description": metadata.get("description", ""),
-            "keywords": metadata.get("keywords", []),
-            "center": metadata.get("center", ""),
-            "media_type": metadata.get("media_type", ""),
-            "date_created": metadata.get("date_created", ""),
-            "location": metadata.get("location", ""),
-            "photographer": metadata.get("photographer", ""),
-            "secondary_creator": metadata.get("secondary_creator", ""),
-            "album": metadata.get("album", []),
-            "links": links,
-        })
+        # Fetch data from the API for each page of the specified year
+        while True:
+            # Set up the parameters for the API request
+            params = {
+                "media_type": "image,video",
+                "year_start": year,
+                "year_end": year,
+                "page": page
+            }
 
-        count += 1
-    
-    # Optionally save the results to a JSON file
-    if save_to_file:
-        file_path = os.path.join("data/nasa_api_results", f"nasa_api_results_{query}.json")
-        with open(file_path, "w") as file:
+            # Fetch data from the API
+            response = requests.get(API_URL, params=params)
+            if response.status_code != 200:
+                print(f"Error fetching year {year}, page {page}: {response.status_code}")
+                break
+
+            # Parse the JSON response
+            data = response.json()
+            items = data.get("collection", {}).get("items", [])
+            if not items:
+                save_progress(year, page)
+                break
+
+            # Process each item in the response
+            for item in items:
+                metadata = item.get("data", [])[0]
+                links = item.get("links", [{}])
+                year_results.append({
+                    "nasa_id": metadata.get("nasa_id", ""),
+                    "title": metadata.get("title", ""),
+                    "description": metadata.get("description", ""),
+                    "keywords": metadata.get("keywords", []),
+                    "center": metadata.get("center", ""),
+                    "media_type": metadata.get("media_type", ""),
+                    "date_created": metadata.get("date_created", ""),
+                    "location": metadata.get("location", ""),
+                    "photographer": metadata.get("photographer", ""),
+                    "secondary_creator": metadata.get("secondary_creator", ""),
+                    "album": metadata.get("album", []),
+                    "links": links,
+                })
+
+            print(f"   Retrieved {len(items)} items from year {year}, page {page}.")
+
+            # Save progress after each page
+            save_progress(year, page)
+
+            page += 1
+
+            # Delay to avoid hitting the API rate limit
+            time.sleep(delay)
+        
+        # Save results for the year if requested
+        if save_per_year and year_results:
+            year_file = os.path.join(OUTPUT_DIR, f"nasa_data_{year}.json")
+            with open(year_file, "a") as file:
+                for item in year_results:
+                    file.write(json.dumps(item) + "\n")
+            print(f"Saved {len(year_results)} items for year {year} to {year_file}.")
+
+        results.extend(year_results)
+
+    # Save all results to a single file if not saving per year
+    if not save_per_year and results:
+        merged_file = os.path.join(OUTPUT_DIR, "nasa_data_merged.json")
+        with open(merged_file, "w") as file:
             json.dump(results, file, indent=4)
-        print(f"Results saved to {file_path}.")
+        print(f"Saved {len(results)} total items to {merged_file}.")
 
-    # Return the list of results
-    return results
+
+def save_progress(year: int, page: int):
+    """
+    Save the progress of the crawl to a file.
+    
+    Parameters:
+        year (int): The year of the last crawled data.
+        page (int): The page number of the last crawled data.
+    """
+
+    with open(PROGRESS_FILE, "w") as file:
+        json.dump({"year": year, "page": page}, file)
+    print(f"Progress saved: Year {year}, Page {page}.")
+
+
+def load_progress():
+    """
+    Load the progress of the crawl from a file.
+
+    Returns:
+        dict: A dictionary containing the last crawled year and page number.
+    """
+
+    if os.path.exists(PROGRESS_FILE):
+        with open(PROGRESS_FILE, "r") as file:
+            return json.load(file)
+        
+    return {"year": None, "page": None}
+
 
 if __name__ == "__main__":
-    # Example usage
-    crawl_nasa_api("moon", max_results=100, save_to_file=True)
+    # Load the last crawled year and page from the progress file
+    progress = load_progress()
+    start_year = progress["year"] or 1920
+    start_page = progress["page"] + 1 if progress["page"] else 1
+
+    # Crawl everything from 1920 to 2025 with a delay of 5 seconds between requests
+    crawl_nasa_api_by_year(start_year=start_year, start_page=start_page, end_year=2025, delay=5, save_per_year=True)
+    print("Crawling completed.")

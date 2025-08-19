@@ -9,3 +9,16 @@
 
 # Python virtual environment
 venv/
+
+# Private environment variables
+.env
+
+# Corpus JSON files
+data/nasa_full_corpus
+
+# Large index files
+data/doc_lookup.json
+data/doc_norms.json
+data/idf_scores.json
+data/inverted_index.json
+data/tf_idf_index.json
