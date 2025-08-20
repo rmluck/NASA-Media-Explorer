@@ -114,6 +114,25 @@ def load_avg_doc_length(file_path: str) -> float:
     return avg_doc_length
 
 
+def load_doc_lookup(file_path: str) -> dict[str, dict]:
+    """
+    Load the document lookup information from a JSON file.
+
+    Parameters:
+        file_path (str): The path to the JSON file containing the document lookup information.
+
+    Returns:
+        dict: A dictionary mapping document IDs to their metadata.
+    """
+
+    # Load the document lookup information from a JSON file
+    with open(file_path, "r") as file:
+        doc_lookup = json.load(file)
+
+    # Return the loaded document lookup information
+    return doc_lookup
+
+
 def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, list[int]]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Score the query against the TF-IDF index and return the ranked documents.
@@ -252,20 +271,18 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
 
 
 if __name__ == "__main__":
-    corpus_dir = "data"
-    inverted_index = load_inverted_index(os.path.join(corpus_dir, "inverted_index.json"))
-    idf_scores = load_idf_scores(os.path.join(corpus_dir, "idf_scores.json"))
+    index_dir = "data"
+    inverted_index = load_inverted_index(os.path.join(index_dir, "inverted_index.json"))
+    idf_scores = load_idf_scores(os.path.join(index_dir, "idf_scores.json"))
     # tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
-    doc_lengths = load_doc_lengths(os.path.join(corpus_dir, "doc_lengths.json"))
-    avg_doc_length = load_avg_doc_length(os.path.join(corpus_dir, "avg_doc_length.json"))
+    doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))
+    avg_doc_length = load_avg_doc_length(os.path.join(index_dir, "avg_doc_length.json"))
 
     query = "moon landing"
     ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
-    doc_lookup_file_path = os.path.join("data", "doc_lookup.json")
-    with open(doc_lookup_file_path, "r") as file:
-        doc_lookup = json.load(file)
+    doc_lookup = load_doc_lookup(os.path.join(index_dir, "doc_lookup.json"))
 
     metadata_cache = {}
 
