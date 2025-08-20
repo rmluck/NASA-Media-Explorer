@@ -14,6 +14,13 @@ nlp = spacy.load("en_core_web_sm")
 
 DOMAIN_STOPWORDS = {"nasa", "nasa_id", "nasa_url", "media_type", "title", "description", "keywords", "location", "date_created", "image", "video", "audio", "thumbnail", "media", "photo", "photograph", "space", "nasa", "center", "science"}
 
+FIELD_WEIGHTS = {
+    "title": 3.0,
+    "keywords": 2.0,
+    "description": 1.0,
+    "location": 0.5
+}
+
 
 def preprocess_text(text: str) -> list[str]:
     """
@@ -28,11 +35,14 @@ def preprocess_text(text: str) -> list[str]:
 
     doc = nlp(text)
 
-    # Tokenize the text, remove stopwords and punctuation, convert to lowercase, strip whitespace, and lemmatize
+    # Tokenize the text, remove stopwords and punctuation, convert to lowercase, strip whitespace, and lemmatize (if not a proper noun)
     tokens = []
     for token in doc:
         if not token.is_stop and not token.is_punct:
-            lemma = token.lemma_.lower().strip()
+            if token.pos_ == "PROPN":
+                lemma = token.text.lower().strip()
+            else:
+                lemma = token.lemma_.lower().strip()
             if lemma and len(lemma) > 2 and lemma not in DOMAIN_STOPWORDS:
                 tokens.append(lemma)
 
@@ -69,22 +79,12 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
         print(f"Processing file: {filename}...")
         # Load the JSON data from the file
         docs = []
-        file_path = os.path.join(corpus_directory, filename)
         with open(file_path, "r") as file:
-            for i, line in enumerate(file, start=1):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    docs.append(json.loads(line))
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON on line {i} in file {filename}: {e}")
-                    raise
+            docs = [json.loads(line) for line in file if line.strip()]
 
         # Process each document in the JSON file
-        for i in range(len(docs)):
+        for i, doc in enumerate(docs):
             # Retrieve the document ID
-            doc = docs[i]
             doc_id = doc.get("nasa_id")
             if not doc_id:
                 continue
@@ -95,40 +95,62 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
                 "index": i
             }
 
-            # Preprocess the text fields to create a tokenized representation of the document
-            text = " ".join([
-                doc.get("title", ""),
-                doc.get("description", ""),
-                " ".join(doc.get("keywords", [])),
-                doc.get("location", "")
-            ])
-            tokens = preprocess_text(text)
-            doc_lengths[doc_id] = len(tokens)
+            # Initialize the document length
+            doc_length = 0
 
-            # Update the inverted index with the tokens and their frequencies
-            for token in tokens:
-                if token not in inverted_index:
-                    inverted_index[token] = {}
-                if doc_id not in inverted_index[token]:
-                    inverted_index[token][doc_id] = 0
-                inverted_index[token][doc_id] += 1
+            # Process each field separately with weighting
+            for field, weight in FIELD_WEIGHTS.items():
+                token_position = 0
+                if field in doc:
+                    # Preprocess the text field to create a tokenized representation of the document
+                    text = doc[field]
+                    if isinstance(text, list):
+                        text = " ".join(text)
+                    tokens = preprocess_text(text)
+
+                    for token in tokens:
+                        if token not in inverted_index:
+                            inverted_index[token] = {}
+                        if doc_id not in inverted_index[token]:
+                            inverted_index[token][doc_id] = {"freq": 0, "positions": []}
+                        inverted_index[token][doc_id]["freq"] += weight
+                        inverted_index[token][doc_id]["positions"].append(token_position)
+                        token_position += 1
+
+                    # Update the document length
+                    doc_length += len(tokens)
+
+            # Store the document length
+            doc_lengths[doc_id] = doc_length
 
     # Filter out rare tokens that appear in fewer than 2 documents
     rare_threshold = 2
     inverted_index = {token: docs for token, docs in inverted_index.items() if len(docs) >= rare_threshold}
 
-    # Optionally save the inverted index to a JSON file
+    # Calculate and store the average document length
+    avg_doc_length = sum(doc_lengths.values()) / len(doc_lengths)        
+
+    # Optionally save the inverted index, document lookup information, document lengths, and average document length to JSON files
     if save_to_file:
         file_path = os.path.join("data", "inverted_index.json")
         with open(file_path, "w") as file:
             json.dump(inverted_index, file, indent=2)
         print(f"Inverted index saved to {file_path}.")
 
-        # Save the document lookup information to a JSON file
         file_path = os.path.join("data", "doc_lookup.json")
         with open(file_path, "w") as file:
             json.dump(doc_lookup, file, indent=2)
         print(f"Document lookup information saved to {file_path}.")
+
+        file_path = os.path.join("data", "doc_lengths.json")
+        with open(file_path, "w") as file:
+            json.dump(doc_lengths, file, indent=2)
+        print(f"Document lengths saved to {file_path}.")
+
+        file_path = os.path.join("data", "avg_doc_length.json")
+        with open(file_path, "w") as file:
+            json.dump({"avg_doc_length": avg_doc_length}, file)
+        print(f"Average document length saved to {file_path}.")
 
     # Return the inverted index and document lengths
     return inverted_index, doc_lengths
@@ -152,7 +174,7 @@ def compute_idf(inverted_index: dict[str, dict[str, int]], doc_count: int, save_
     # Calculate the IDF for each token in the inverted index
     for token, doc_freqs in inverted_index.items():
         df = len(doc_freqs)
-        idf_scores[token] = math.log((1 + doc_count) / (1 + df)) if df > 0 else 0
+        idf_scores[token] = math.log((doc_count - df + 0.5) / (df + 0.5) + 1) if df > 0 else 0
 
     # Optionally save the inverted index to a JSON file
     if save_to_file:
@@ -190,7 +212,7 @@ def build_tf_idf_index(inverted_index: dict[str, dict[str, int]], doc_lengths: d
         norm_sq = 0
         for token, doc_freqs in inverted_index.items():
             if doc_id in doc_freqs:
-                tf = doc_freqs[doc_id] / doc_lengths[doc_id]
+                tf = len(doc_freqs[doc_id]) / doc_lengths[doc_id]
                 tf_idf = tf * idf[token]
                 tf_idf_index[doc_id][token] = tf_idf
                 norm_sq += tf_idf ** 2
@@ -219,35 +241,21 @@ def build_index(corpus_dir: str):
         corpus_dir (str): The directory containing the corpus data.
     """
 
-    # # Build the inverted index
-    # print("Building inverted index...")
-    # inverted_index, doc_lengths = build_inverted_index(corpus_dir, save_to_file=True)
-    # print("Inverted index built successfully.")
+    # Build the inverted index
+    print("Building inverted index...")
+    inverted_index, doc_lengths = build_inverted_index(corpus_dir, save_to_file=True)
+    print("Inverted index built successfully.")
 
-    # # Compute the IDF scores
-    # doc_count = len(doc_lengths)
-    # print("Computing IDF scores...")
-    # idf_scores = compute_idf(inverted_index, doc_count, save_to_file=True)
-    # print("IDF scores computed successfully.")
-
-    file_path = os.path.join("data", "inverted_index.json")
-    with open(file_path, "r") as file:
-        inverted_index = json.load(file)
-
-    file_path = os.path.join("data", "idf_scores.json")
-    with open(file_path, "r") as file:
-        idf_scores = json.load(file)
-
-    file_path = os.path.join("data", "doc_lookup.json")
-    with open(file_path, "r") as file:
-        doc_lookup = json.load(file)
-    
-    doc_lengths = {doc_id: len(tokens) for doc_id, tokens in doc_lookup.items()}
+    # Compute the IDF scores
+    doc_count = len(doc_lengths)
+    print("Computing IDF scores...")
+    idf_scores = compute_idf(inverted_index, doc_count, save_to_file=True)
+    print("IDF scores computed successfully.")
 
     # Build the TF-IDF index
-    print("Building TF-IDF index...")
-    tf_idf_index, doc_norms = build_tf_idf_index(inverted_index, doc_lengths, idf_scores, save_to_file=True)
-    print("TF-IDF index built successfully.")
+    # print("Building TF-IDF index...")
+    # tf_idf_index, doc_norms = build_tf_idf_index(inverted_index, doc_lengths, idf_scores, save_to_file=True)
+    # print("TF-IDF index built successfully.")
 
 
 if __name__ == "__main__":

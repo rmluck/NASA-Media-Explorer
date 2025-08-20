@@ -9,8 +9,12 @@ import math
 from collections import Counter, defaultdict
 from indexer import preprocess_text
 
+PHRASE_WEIGHT = 2.0
+BM25_K = 1.5
+BM25_B = 0.75
 
-def load_inverted_index(file_path: str) -> dict[str, dict[str, int]]:
+
+def load_inverted_index(file_path: str) -> dict[str, dict[str, list[int]]]:
     """
     Load the inverted index from a JSON file.
 
@@ -72,40 +76,77 @@ def load_tf_idf_index(file_path: str) -> tuple[dict[str, dict[str, float]], dict
     return tf_idf_index, doc_norms
 
 
-def score_query(query_terms: dict[str, int], inverted_index: dict[str, dict[str, int]], idf_scores: dict[str, float], tf_idf_index: dict[str, dict[str, float]], doc_norms: dict[str, float]) -> list[tuple[str, float]]:
+def load_doc_lengths(file_path: str) -> dict[str, float]:
+    """
+    Load the document lengths from a JSON file.
+
+    Parameters:
+        file_path (str): The path to the JSON file containing the document lengths.
+
+    Returns:
+        dict: A dictionary mapping document IDs to their lengths.
+    """
+
+    # Load the document lengths from a JSON file
+    with open(file_path, "r") as file:
+        doc_lengths = json.load(file)
+
+    # Return the loaded document lengths
+    return doc_lengths
+
+
+def load_avg_doc_length(file_path: str) -> float:
+    """
+    Load the average document length from a JSON file.
+
+    Parameters:
+        file_path (str): The path to the JSON file containing the average document length.
+
+    Returns:
+        float: The average document length.
+    """
+
+    # Load the average document length from a JSON file
+    with open(file_path, "r") as file:
+        avg_doc_length = json.load(file)["avg_doc_length"]
+
+    # Return the loaded average document length
+    return avg_doc_length
+
+
+def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, list[int]]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Score the query against the TF-IDF index and return the ranked documents.
 
     Parameters:
-        query_terms (dict): The preprocessed query terms and their frequencies.
+        query_tokens (list): The list of tokens in the query.
         inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
         idf_scores (dict): The IDF scores for each term.
-        tf_idf_index (dict): The TF-IDF index mapping document IDs to tokens and their TF-IDF scores.
-        doc_norms (dict): The document norms mapping document IDs to their normalized lengths.
-        
+        doc_lengths (dict): The document lengths mapping document IDs to their lengths.
+        avg_doc_length (float): The average document length in the corpus.
+
     Returns:
         list: The list of tuples containing document IDs and their scores, sorted by score in descending order.
     """
 
-    # Compute the query tf-idf weights
-    query_tf = Counter(query_terms)
-    query_weights = {}
-    for term, freq in query_tf.items():
-        if term in idf_scores:
-            query_weights[term] = (freq / len(query_terms)) * idf_scores[term]
-
     # Get the candidate documents from the inverted index
     candidate_docs = set()
-    for term in query_weights.keys():
-        if term in inverted_index:
-            candidate_docs.update(inverted_index[term].keys())
+    for token in query_tokens:
+        if token in inverted_index:
+            candidate_docs.update(inverted_index[token].keys())
 
     # Score the candidate documents using cosine similarity
     scores = defaultdict(float)
     for doc_id in candidate_docs:
-        doc_weights = tf_idf_index[doc_id]
-        score = sum(query_weights[term] * doc_weights.get(term, 0) for term in query_weights)
-        scores[doc_id] = score / doc_norms[doc_id]
+        doc_len = doc_lengths[doc_id]
+        score = 0
+        for token in query_tokens:
+            if token in inverted_index and doc_id in inverted_index[token]:
+                freq = inverted_index[token][doc_id]["freq"]
+                idf = idf_scores.get(token, 0)
+                score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
+        score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
+        scores[doc_id] += score
 
     # Sort the documents by their scores in descending order
     ranked_docs = sorted(scores.items(), key=lambda item: item[1], reverse=True)
@@ -114,7 +155,49 @@ def score_query(query_terms: dict[str, int], inverted_index: dict[str, dict[str,
     return ranked_docs
 
 
-def search_query(query: str, inverted_index: dict[str, dict[str, int]], idf_scores: dict[str, float], tf_idf_index: dict[str, dict[str, float]], doc_norms: dict[str, float]) -> list[tuple[str, float]]:
+def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str, dict[str, list[int]]]) -> int:
+    """
+    Count how many times the exact phrase appears in the document.
+    
+    Parameters:
+        doc_id (str): The document ID.
+        query_tokens (list): The list of tokens in the query phrase.
+        inverted_index (dict): The inverted index mapping terms to document IDs and their token positions.
+
+    Returns:
+        int: The count of the exact phrase occurrences in the document.
+    """
+
+    if len(query_tokens) < 2:
+        return 0
+    
+    # Get the positions of the first token in the query phrase
+    first_token = query_tokens[0]
+    if first_token not in inverted_index or doc_id not in inverted_index[first_token]:
+        return 0
+    
+    first_positions = inverted_index[first_token][doc_id]["positions"]
+
+    phrase_count = 0
+    for pos in first_positions:
+        # Check if the subsequent tokens in the phrase match the positions
+        match = True
+        for offset, token in enumerate(query_tokens[1:], start=1):
+            if token not in inverted_index or doc_id not in inverted_index[token]:
+                match = False
+                break
+            if pos + offset not in inverted_index[token][doc_id]["positions"]:
+                match = False
+                break
+        
+        if match:
+            phrase_count += 1
+
+    # Return the count of the exact phrase occurrences
+    return phrase_count
+
+
+def search_query(query: str, inverted_index: dict[str, dict[str, list[int]]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Search for a query in the indexed corpus and return the top results.
     
@@ -122,8 +205,8 @@ def search_query(query: str, inverted_index: dict[str, dict[str, int]], idf_scor
         query (str): The search query.
         inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
         idf_scores (dict): The IDF scores for each term.
-        tf_idf_index (dict): The TF-IDF index mapping document IDs to tokens and their TF-IDF scores.
-        doc_norms (dict): The document norms mapping document IDs to their normalized lengths.
+        doc_lengths (dict): The document lengths mapping document IDs to their lengths.
+        avg_doc_length (float): The average document length in the corpus.
 
     Returns:
         list: The list of tuples containing document IDs and their scores, sorted by score in descending order.
@@ -133,7 +216,7 @@ def search_query(query: str, inverted_index: dict[str, dict[str, int]], idf_scor
     query_terms = preprocess_text(query)
 
     # Calculate the document scores for the query against the TF-IDF index
-    ranked_docs = score_query(query_terms, inverted_index, idf_scores, tf_idf_index, doc_norms)
+    ranked_docs = score_query(query_terms, inverted_index, idf_scores, doc_lengths, avg_doc_length)
 
     # Return the ranked documents
     return ranked_docs
@@ -162,7 +245,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
         # Load the metadata for the document
         doc_metadata_file_path = os.path.join("data/nasa_full_corpus", f"nasa_data_{year}.json")
         with open(doc_metadata_file_path, "r") as file:
-            metadata_cache[year] = json.load(file)
+            metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
     
     # Return the metadata for the document
     return metadata_cache[year][doc_lookup[doc_id]["index"]]
@@ -172,10 +255,12 @@ if __name__ == "__main__":
     corpus_dir = "data"
     inverted_index = load_inverted_index(os.path.join(corpus_dir, "inverted_index.json"))
     idf_scores = load_idf_scores(os.path.join(corpus_dir, "idf_scores.json"))
-    tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
+    # tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
+    doc_lengths = load_doc_lengths(os.path.join(corpus_dir, "doc_lengths.json"))
+    avg_doc_length = load_avg_doc_length(os.path.join(corpus_dir, "avg_doc_length.json"))
 
     query = "moon landing"
-    ranked_docs = search_query(query, inverted_index, idf_scores, tf_idf_index, doc_norms)
+    ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
     doc_lookup_file_path = os.path.join("data", "doc_lookup.json")

@@ -22,3 +22,5 @@ data/doc_norms.json
 data/idf_scores.json
 data/inverted_index.json
 data/tf_idf_index.json
+data/doc_lengths.json
+data/avg_doc_length.json
