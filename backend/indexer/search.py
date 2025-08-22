@@ -7,11 +7,13 @@ import json
 import os
 import math
 from collections import Counter, defaultdict
-from indexer import preprocess_text
+from .indexer import preprocess_text
 
 PHRASE_WEIGHT = 2.0
 BM25_K = 1.5
 BM25_B = 0.75
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 
 
 def load_inverted_index(file_path: str) -> dict[str, dict[str, list[int]]]:
@@ -262,7 +264,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
     # Check if the metadata is already cached
     if year not in metadata_cache:
         # Load the metadata for the document
-        doc_metadata_file_path = os.path.join("data/nasa_full_corpus", f"nasa_data_{year}.json")
+        doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
         with open(doc_metadata_file_path, "r") as file:
             metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
     
@@ -278,7 +280,7 @@ if __name__ == "__main__":
     doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))
     avg_doc_length = load_avg_doc_length(os.path.join(index_dir, "avg_doc_length.json"))
 
-    query = "moon landing"
+    query = "mars"
     ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
@@ -286,10 +288,11 @@ if __name__ == "__main__":
 
     metadata_cache = {}
 
-    print(f"Top results for query '{query}':")
-    for doc_id, score in ranked_docs[:10]:
+    for doc_id, score in ranked_docs[:20]:
         # Get metadata for the document
         doc_metadata = get_doc_metadata(doc_id, doc_lookup, metadata_cache)
         title = doc_metadata.get("title", "Unknown Title")
 
         print(f"Title: {title}, Score: {score:.4f}")
+
+        

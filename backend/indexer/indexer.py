@@ -9,9 +9,6 @@ import os
 import math
 import numpy as np
 
-# Load the spaCy model for text processing
-nlp = spacy.load("en_core_web_sm")
-
 DOMAIN_STOPWORDS = {"nasa", "nasa_id", "nasa_url", "media_type", "title", "description", "keywords", "location", "date_created", "image", "video", "audio", "thumbnail", "media", "photo", "photograph", "space", "nasa", "center", "science"}
 
 FIELD_WEIGHTS = {
@@ -20,6 +17,9 @@ FIELD_WEIGHTS = {
     "description": 1.0,
     "location": 0.5
 }
+
+# Load the spaCy model for text processing
+nlp = spacy.load("en_core_web_sm")
 
 
 def preprocess_text(text: str) -> list[str]:
