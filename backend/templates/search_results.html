@@ -58,15 +58,44 @@
             <div class="row g-4" id="results_grid">
                 {% for item in results %}
                 <div class="col-md-3 col-sm-6">
-                    <div class="result_card">
+                    <div class="result_card"
+                         data-title="{{ item.title | default('N/A') }}"
+                         data-description="{{ item.description | default('N/A') }}"
+                         data-media-type="{{ item.media_type | default('N/A') }}"
+                         data-date="{{ item.date_created | default('N/A') }}"
+                         data-location="{{ item.location | default('N/A') }}"
+                         data-center="{{ item.center | default('N/A') }}"
+                         data-photographer="{{ item.photographer | default('N/A') }}"
+                         data-keywords="{{ item.keywords|join(', ') | default('N/A') }}"
+                         data-asset="{{ item.asset | default('N/A') }}"
+                         data-thumbnail="{{ item.thumbnail | default('N/A') }}"
+                         data-doc-id="{{ item.doc_id | default('N/A') }}">
                         <img src="{{ item.thumbnail }}" alt="{{ item.title }}">
-                        <div class="overlay">{{ item.doc_id }}</div>
+                        <div class="overlay">{{ item.title }}</div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            <div class="text-center my-4">
-                <button id="load_more_btn" class="btn btn-primary">Load More</button>
+        </div>
+        <div class="modal fade" id="mediaModal" tabindex="-1" aria-labelledby="mediaModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content bg-dark text-light">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="mediaModalLabel"></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="mediaModalBody"></div>
+                        <p id="mediaDescription" class="mt-3"></p>
+                        <ul class="list-unstyled text-start mt-3">
+                            <li><strong>Date Created:</strong> <span id="mediaDate"></span></li>
+                            <li><strong>Location:</strong> <span id="mediaLocation"></span></li>
+                            <li><strong>Center:</strong> <span id="mediaCenter"></span></li>
+                            <li><strong>Photographer:</strong> <span id="mediaPhotographer"></span></li>
+                            <li><strong>Keywords:</strong> <span id="mediaKeywords"></span></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -79,12 +108,22 @@
             let startYear = null;
             let endYear = null;
             let mediaType = "";
+            let loading = false;
 
-            const loadMoreBtn = document.getElementById("load_more_btn");
             const resultsGrid = document.getElementById("results_grid");
             const slider = document.getElementById("year-range");
             const yearValues = document.getElementById("year-range-values");
             const media = document.getElementById("media-type");
+
+            const modal = new bootstrap.Modal(document.getElementById("mediaModal"));
+            const modalTitle = document.getElementById("mediaModalLabel");
+            const modalBody = document.getElementById("mediaModalBody");
+            const modalDescription = document.getElementById("mediaDescription");
+            const modalDate = document.getElementById("mediaDate");
+            const modalLocation = document.getElementById("mediaLocation");
+            const modalCenter = document.getElementById("mediaCenter");
+            const modalPhotographer = document.getElementById("mediaPhotographer");
+            const modalKeywords = document.getElementById("mediaKeywords");
 
             noUiSlider.create(slider, {
                 start: [1920, 2025],
@@ -120,7 +159,6 @@
                 if (reset) {
                     offset = 0;
                     resultsGrid.innerHTML = "";
-                    loadMoreBtn.style.display = "block";
                 }
 
                 const params = new URLSearchParams();
@@ -145,8 +183,19 @@
                     col.className = "col-md-3 col-sm-6";
 
                     col.innerHTML = `
-                    <div class="result_card">
-                        <img src="${item.thumbnail ?? '#'}" alt="${item.title}">
+                    <div class="result_card"
+                         data-title="${item.title}"
+                         data-description="${item.description}"
+                         data-media-type="${item.media_type}"
+                         data-date="${item.date_created || "N/A"}"
+                         data-location="${item.location || "N/A"}"
+                         data-center="${item.center || "N/A"}"
+                         data-photographer="${item.photographer || "N/A"}"
+                         data-keywords="${item.keywords.join(', ') || "N/A"}"
+                        data-asset="${item.asset}"
+                         data-thumbnail="${item.thumbnail}"
+                         data-doc-id="${item.doc_id}">
+                        <img src="${item.thumbnail}" alt="${item.title}">
                         <div class="overlay">${item.title}</div>
                     </div>
                     `;
@@ -154,16 +203,58 @@
                 });
 
                 offset += data.results.length;
-                if (offset >= data.total_results) {
-                    loadMoreBtn.style.display = "none";
-                }
             }
 
-            loadMoreBtn.addEventListener("click", () => fetchResults({ reset: false }));
-            
-            window.addEventListener("scroll", () => {
+            function openModal(card) {
+                const title = card.dataset.title;
+                const description = card.dataset.description;
+                const mediaType = card.dataset.mediaType.toLowerCase();
+                const asset = card.dataset.asset;
+                const thumbnail = card.dataset.thumbnail;
+
+                modalTitle.textContent = title;
+                modalDescription.textContent = description;
+                modalDate.textContent = card.dataset.date;
+                modalLocation.textContent = card.dataset.location;
+                modalCenter.textContent = card.dataset.center;
+                modalPhotographer.textContent = card.dataset.photographer;
+                modalKeywords.textContent = card.dataset.keywords;
+
+                modalBody.innerHTML = "";
+
+                if (mediaType === "video") {
+                    const video = document.createElement("video");
+                    video.src = asset;
+                    video.controls = true;
+                    video.autoplay = false;
+                    video.style.maxWidth = "100%";
+                    modalBody.appendChild(video);
+                } else {
+                    const img = document.createElement("img");
+                    img.src = asset;
+                    img.alt = title;
+                    img.style.maxWidth = "100%";
+                    modalBody.appendChild(img);
+                }
+
+                modal.show();
+            }
+
+            window.addEventListener("scroll", async () => {
+                if (loading) return;
                 if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-                    loadMoreBtn.click();
+                    if (offset < totalResults) {
+                        loading = true;
+                        await fetchResults({ reset: false });
+                        loading = false;
+                    }
+                }
+            });
+
+            document.addEventListener("click", function(e) {
+                const card = e.target.closest(".result_card");
+                if (card) {
+                    openModal(card);
                 }
             });
         </script>

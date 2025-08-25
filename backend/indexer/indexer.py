@@ -7,9 +7,17 @@ import spacy
 import json
 import os
 import math
-import numpy as np
+import re
 
 DOMAIN_STOPWORDS = {"nasa", "nasa_id", "nasa_url", "media_type", "title", "description", "keywords", "location", "date_created", "image", "video", "audio", "thumbnail", "media", "photo", "photograph", "space", "nasa", "center", "science"}
+
+GENERAL_NASA_PATTERNS = {
+    r"\b[A-Z][a-zA-Z]+[- ]?\d+\b",  # Matches patterns like "Apollo 11", "Voyager-1"
+    r"\b[A-Z]{2,}-?\d*\b",      # Matches patterns like "ISS-123", "HST-456"
+    r"\b[A-Z]{2,}\b",          # Matches patterns like "NASA", "ESA"
+    r"\b\d{4}\b",               # Matches years like "1969", "2020"
+    r"\b\d{3,}\b",              # Matches any number with 3 or more digits
+}
 
 FIELD_WEIGHTS = {
     "title": 3.0,
@@ -33,6 +41,12 @@ def preprocess_text(text: str) -> list[str]:
         list[str]: The list of processed tokens.
     """
 
+    preserved_tokens = []
+    for pattern in GENERAL_NASA_PATTERNS:
+        matches = re.findall(pattern, text, flags=re.IGNORECASE)
+        preserved_tokens.extend([match.lower() for match in matches])
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+
     doc = nlp(text)
 
     # Tokenize the text, remove stopwords and punctuation, convert to lowercase, strip whitespace, and lemmatize (if not a proper noun)
@@ -47,7 +61,7 @@ def preprocess_text(text: str) -> list[str]:
                 tokens.append(lemma)
 
     # Return the list of processed tokens
-    return tokens
+    return preserved_tokens + tokens
         
 
 def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> tuple[dict[str, dict[str, int]], dict[str, int]]:

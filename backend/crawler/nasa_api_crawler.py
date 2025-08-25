@@ -24,7 +24,56 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 PROGRESS_FILE = "data/nasa_crawl_progress.json"
 
 
-def crawl_nasa_api_by_year(start_year: int = 1920, start_page: int = 1, end_year: int = 2025, delay: int = 5, save_per_year: bool = True):
+# def test_crawl(start_year=1999, start_page=1, end_year=1999, delay=1):
+#     # Initialize a list to hold the results
+#     results = []
+
+#     # Iterate through each year in the specified range
+#     for year in range(start_year, end_year + 1):
+#         print(f"Crawling year {year}...")
+#         year_results = []
+#         page = start_page if year == start_year else 1
+
+#         # Fetch data from the API for each page of the specified year
+#         while True:
+#             # Set up the parameters for the API request
+#             params = {
+#                 "media_type": "image,video",
+#                 "year_start": year,
+#                 "year_end": year,
+#                 "page": page
+#             }
+
+#             # Fetch data from the API
+#             response = requests.get(API_URL, params=params)
+#             if response.status_code != 200:
+#                 print(f"Error fetching year {year}, page {page}: {response.status_code}")
+#                 break
+
+#             # Parse the JSON response
+#             data = response.json()
+#             items = data.get("collection", {}).get("items", [])
+#             if not items:
+#                 save_progress(year, page)
+#                 break
+
+#             i = 0
+#             # Process each item in the response
+#             for item in items:
+#                 collection = requests.get(item.get("href", "")).json()
+#                 asset = [link for link in collection if "~orig" in link][0]
+#                 thumbnail = [link for link in collection if "~thumb" in link][-1]
+#                 print(asset)
+#                 print(thumbnail)
+
+#                 print("-----\n\n\n")
+#                 i += 1
+#                 if i > 20:
+#                     break
+#             break
+
+
+def crawl_nasa_api_by_year(start_year: int = 1920, start_page: int = 1, end_year: int = 2025, delay: int = 1, save_per_year: bool = True):
     """
     Crawl the NASA API incrementally by year and save results.
     
@@ -71,7 +120,12 @@ def crawl_nasa_api_by_year(start_year: int = 1920, start_page: int = 1, end_year
             # Process each item in the response
             for item in items:
                 metadata = item.get("data", [])[0]
-                links = item.get("links", [{}])
+                collection = requests.get(item.get("href", ""))
+                if not collection:
+                    continue
+                collection = collection.json()
+                asset = [link for link in collection if "~orig" in link][0]
+                thumbnail = [link for link in collection if "~thumb" in link][-1]
                 year_results.append({
                     "nasa_id": metadata.get("nasa_id", ""),
                     "title": metadata.get("title", ""),
@@ -84,7 +138,8 @@ def crawl_nasa_api_by_year(start_year: int = 1920, start_page: int = 1, end_year
                     "photographer": metadata.get("photographer", ""),
                     "secondary_creator": metadata.get("secondary_creator", ""),
                     "album": metadata.get("album", []),
-                    "links": links,
+                    "asset": asset,
+                    "thumbnail": thumbnail
                 })
 
             print(f"   Retrieved {len(items)} items from year {year}, page {page}.")
@@ -150,6 +205,6 @@ if __name__ == "__main__":
     start_year = progress["year"] or 1920
     start_page = progress["page"] + 1 if progress["page"] else 1
 
-    # Crawl everything from 1920 to 2025 with a delay of 5 seconds between requests
-    crawl_nasa_api_by_year(start_year=start_year, start_page=start_page, end_year=2025, delay=5, save_per_year=True)
+    # Crawl everything from 1920 to 2025 with a delay of 1 second between requests
+    crawl_nasa_api_by_year(start_year=start_year, start_page=start_page, end_year=2025, delay=1, save_per_year=True)
     print("Crawling completed.")

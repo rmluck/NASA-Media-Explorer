@@ -4,6 +4,7 @@ Main entry point for the NASA Media Explorer backend.
 
 
 import os
+from urllib.parse import quote
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
@@ -49,8 +50,20 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
     top_results = []
     for doc_id, score in paged_results:
         metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
-        links = metadata.get("links", [])
-        thumbnail = next((d for d in links if d.get("rel") == "preview"), links[0])
+        
+        raw_asset = metadata.get("asset", "").replace("http://", "https://")
+        raw_thumbnail = metadata.get("thumbnail", "").replace("http://", "https://")
+        asset = quote(raw_asset, safe=":/~")
+        thumbnail = quote(raw_thumbnail, safe=":/~")
+
+        date = metadata.get("date_created", "Unknown Date")
+        if date != "Unknown Date" and len(date) >= 10:
+            try:
+                parsed_date = datetime.strptime(date[:10], "%Y-%m-%d")
+                date = parsed_date.strftime("%B %d, %Y")
+            except ValueError:
+                pass
+        
         top_results.append({
             "doc_id": doc_id,
             "media_type": metadata.get("media_type", "Unknown"),
@@ -58,10 +71,11 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
             "description": metadata.get("description", "No description available"),
             "keywords": metadata.get("keywords", []),
             "center": metadata.get("center", "Unknown Center"),
-            "date_created": metadata.get("date_created", "Unknown Date"),
+            "date_created": date,
             "location": metadata.get("location", "Unknown Location"),
             "photographer": metadata.get("photographer", "Unknown Photographer"),
-            "thumbnail": thumbnail["href"],
+            "asset": asset,
+            "thumbnail": thumbnail,
             "score": score,
         })
 
@@ -74,6 +88,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
             "limit": limit,
             "offset": offset,
             "total_results": total_results,
+            "year": datetime.now().year
         }
     )
 
@@ -96,8 +111,18 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
         if media_type and metadata.get("media_type") != media_type:
             continue
 
-        links = metadata.get("links", [])
-        thumbnail = next((d for d in links if d.get("rel") == "preview"), links[0])
+        raw_asset = metadata.get("asset", "").replace("http://", "https://")
+        raw_thumbnail = metadata.get("thumbnail", "").replace("http://", "https://")
+        asset = quote(raw_asset, safe=":/~")
+        thumbnail = quote(raw_thumbnail, safe=":/~")
+
+        date = metadata.get("date_created", "Unknown Date")
+        if date != "Unknown Date" and len(date) >= 10:
+            try:
+                parsed_date = datetime.strptime(date[:10], "%Y-%m-%d")
+                date = parsed_date.strftime("%B %d, %Y")
+            except ValueError:
+                pass
 
         filtered_results.append({
             "doc_id": doc_id,
@@ -106,10 +131,11 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
             "description": metadata.get("description", "No description available"),
             "keywords": metadata.get("keywords", []),
             "center": metadata.get("center", "Unknown Center"),
-            "date_created": metadata.get("date_created", "Unknown Date"),
+            "date_created": date,
             "location": metadata.get("location", "Unknown Location"),
             "photographer": metadata.get("photographer", "Unknown Photographer"),
-            "thumbnail": thumbnail["href"],
+            "asset": asset,
+            "thumbnail": thumbnail,
             "score": score,
         })
 

@@ -235,6 +235,7 @@ def search_query(query: str, inverted_index: dict[str, dict[str, list[int]]], id
 
     # Preprocess the query to create a list of tokens
     query_terms = preprocess_text(query)
+    print(f"Processed query terms: {query_terms}")
 
     # Calculate the document scores for the query against the TF-IDF index
     ranked_docs = score_query(query_terms, inverted_index, idf_scores, doc_lengths, avg_doc_length)
@@ -280,7 +281,7 @@ if __name__ == "__main__":
     doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))
     avg_doc_length = load_avg_doc_length(os.path.join(index_dir, "avg_doc_length.json"))
 
-    query = "mars"
+    query = "Apollo 11"
     ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
@@ -294,5 +295,3 @@ if __name__ == "__main__":
         title = doc_metadata.get("title", "Unknown Title")
 
         print(f"Title: {title}, Score: {score:.4f}")
-
-        
