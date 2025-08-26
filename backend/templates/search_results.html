@@ -120,15 +120,37 @@
                 box-shadow: 0 12px 24px rgba(0, 191, 255, 0.6), 0 16px 50px rgba(255, 140, 0, 0.3);
                 cursor: pointer;
             }
-            .result_card img {
+            /* .result_card img {
                 width: 100%;
                 height: 250px;
                 object-fit: cover;
                 border-radius: 15px 15px 0 0;
                 transition: transform 0.3s ease;
                 z-index: 1;
-            }
-            .result_card:hover img {
+            } */
+             .card-thumbnail, .video-preview {
+                width: 100%;
+                height: 250px;
+                display: block;
+                border-radius: 15px 15px 0 0;
+                transition: transform 0.3s ease;
+                z-index: 1;
+             }
+             .video-preview {
+                position: absolute;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+             }
+             .result_card.video:hover .video-preview {
+                opacity: 1;
+             }
+             .result_card.video:hover .card-thumbnail {
+                opacity: 0;
+             }
+            .result_card:hover .card-thumbnail {
                 transform: scale(1.05);
             }
             .media-badge {
@@ -267,7 +289,7 @@
                 <div class="row g-4" id="results_grid">
                     {% for item in results %}
                     <div class="col-md-3 col-sm-6">
-                        <div class="result_card"
+                        <div class="result_card {{ item.media_type }}"
                             data-title="{{ item.title | default('N/A') }}"
                             data-description="{{ item.description | default('N/A') }}"
                             data-media-type="{{ item.media_type | default('N/A') }}"
@@ -279,8 +301,13 @@
                             data-asset="{{ item.asset | default('N/A') }}"
                             data-thumbnail="{{ item.thumbnail | default('N/A') }}"
                             data-doc-id="{{ item.doc_id | default('N/A') }}">
-                            <img src="{{ item.thumbnail }}" alt="{{ item.title }}">
-                            <span class="media-badge {{ 'video' if item.asset.endswith('.mp4') else 'image' }}">{{ "Video" if item.asset.endswith('.mp4') else "Image" }}</span>
+                            <img src="{{ item.thumbnail }}" alt="{{ item.title }}" class="card-thumbnail">
+                            {% if item.media_type == 'video' %}
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="{{ item.asset }}" type="video/mp4">
+                                </video>
+                            {% endif %}
+                            <span class="media-badge {{ item.media_type }}">{{ item.media_type | capitalize }}</span>
                             <div class="overlay">{{ item.title }}</div>
                         </div>
                     </div>
@@ -400,7 +427,7 @@
                     col.className = "col-md-3 col-sm-6";
 
                     col.innerHTML = `
-                    <div class="result_card"
+                    <div class="result_card ${item.media_type}"
                          data-title="${item.title}"
                          data-description="${item.description}"
                          data-media-type="${item.media_type}"
@@ -412,8 +439,9 @@
                         data-asset="${item.asset}"
                          data-thumbnail="${item.thumbnail}"
                          data-doc-id="${item.doc_id}">
-                        <img src="${item.thumbnail}" alt="${item.title}">
-                        <span class="media-badge ${item.asset.endsWith(".mp4") ? "video" : "image"}">${item.asset.endsWith(".mp4") ? "Video" : "Image"}</span>
+                        <img src="${item.thumbnail}" alt="${item.title}" class="card-thumbnail">
+                        ${item.media_type === "video" ? '<video class="video-preview" muted preload="metadata"><source src="' + item.asset + '" type="video/mp4"></video>' : ''}
+                        <span class="media-badge ${item.media_type}">${item.media_type}</span>
                         <div class="overlay">${item.title}</div>
                     </div>
                     `;
@@ -464,6 +492,7 @@
                     if (offset < totalResults) {
                         loading = true;
                         await fetchResults({ reset: false });
+                        initVideoHover();
                         loading = false;
                     }
                 }
@@ -490,6 +519,27 @@
                     openModal(card);
                 }
             });
+
+            function initVideoHover() {
+                document.querySelectorAll(".result_card.video").forEach(card => {
+                    const video = card.querySelector(".video-preview");
+                    card.addEventListener("mouseenter", () => {
+                        video.currentTime = 0;
+                        video.play();
+                    });
+                    card.addEventListener("mouseleave", () => {
+                        video.pause();
+                        video.currentTime = 0;
+                    });
+                    video.addEventListener("timeupdate", () => {
+                        if (video.currentTime >= 5) {
+                            video.pause();
+                            video.currentTime = 0;
+                        }
+                    });
+                });
+            }
+            initVideoHover();
         </script>
         <footer>
             &copy; {{ year }} NASA Media Explorer
