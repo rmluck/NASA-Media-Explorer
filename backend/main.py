@@ -150,7 +150,5 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
 # Add a hover comet streak effect or shimmer
 # Show animated satellite as loading indicator
 # Smooth fade-in animation for cards as they load
-# Make year range slider look like rocket trajectory timeline
-# Add space HUD feel for modal: semi-transparent black with blue/orange accents
 # Mission info could have radar-style or orbit-themed graphics
 # Add mission patch icons for missions, centers, etc.

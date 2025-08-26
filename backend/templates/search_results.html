@@ -52,20 +52,44 @@
             #year-range {
                 width: 100%;
             }
+            /* #year-range .noUi-base {
+
+                background: linear-gradient(90deg, #037ef8, #ff6600);
+                height: 8px;
+                border-radius: 4px;
+                position: relative;
+            } */
             #year-range .noUi-connect {
-                background: linear-gradient(90deg, #ab5018, #d6722b, #ef784a)
+                /* background: linear-gradient(90deg, #ab5018, #d6722b, #ef784a) */
+
+                background: linear-gradient(90deg, #00cfff, #ff784a);
+                /* height: 8px; */
+                border-radius: 4px;
+                box-shadow: 0 0 10px rgba(255, 120, 74, 0.8);
             }
             #year-range .noUi-handle {
-                background: #E0E1DD;
-                border: 2px solid #778DA9;
-                box-shadow: 0 0 8px rgba(119, 141, 169, 0.7);
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
+                /* background: #E0E1DD; */
+                /* border: 2px solid #778DA9; */
+                /* box-shadow: 0 0 8px rgba(119, 141, 169, 0.7); */
+                /* border-radius: 50%; */
+                /* width: 20px;
+                height: 20px; */
+
+                width: 40px;
+                height: 40px;
+                background: url("https://www.freeiconspng.com/uploads/blue-rocket-png-9.png") no-repeat center center;
+                background-size: contain;
+                border: none;
+                box-shadow: none;
+                cursor: grab;
             }
-            #year-range .noUi-handle {
+            #year-range .noUi-handle:active {
+                transform: scale(1.1) rotate(-5deg);
+                transition: transform 0.1s ease;
+            }
+            /* #year-range .noUi-handle {
                 cursor: grabbing;
-            }
+            } */
             #year-range .noUi-handle::before, #year-range .noUi-handle::after {
                 display: none;
             }
@@ -82,7 +106,7 @@
                 transform: translateX(40%) translateY(95%);
             }
             #year-range .noUi-handle-lower .noUi-tooltip {
-                transform: translateX(-140%) translateY(95%);
+                transform: translateX(-110%) translateY(95%);
             }
             #media-filter select {
                 width: 100%;
@@ -98,8 +122,8 @@
                 transition: all 0.2s ease;
             }
             #media-filter select:hover, #media-filter select:focus {
-                background-color: #0A1A2F;
-                border-color: #00AAFF;
+                background-color: #FF8C00;
+                border-color: #ff784a;
             }
             .results-container {
                 margin-top: 2rem;
@@ -110,24 +134,26 @@
                 overflow: hidden;
                 border-radius: 15px;
                 cursor: pointer;
-                box-shadow: 0 8px 15px rgba(0, 191, 255, 0.4), 0 12px 40px rgba(255, 140, 0, 0.2);
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
                 background: rgba(10, 10, 30, 0.85);
                 backdrop-filter: blur(4px);
             }
+            .result_card.image {
+                box-shadow: 0 8px 15px rgba(0, 191, 255, 0.4), 0 12px 40px rgba(255, 145, 0, 0.2);
+            }
+            .result_card.video {
+                box-shadow: 0 8px 15px rgba(255, 145, 0, 0.4), 0 12px 40px rgba(0, 191, 255, 0.2);
+            }
+            .result_card.image:hover {
+                box-shadow: 0 12px 24px rgba(0, 191, 255, 0.6), 0 16px 50px rgba(255, 145, 0, 0.3);
+            }
+            .result_card.video:hover {
+                box-shadow: 0 12px 24px rgba(255, 145, 0, 0.6), 0 16px 50px rgba(0, 191, 255, 0.3);
+            }
             .result_card:hover {
                 transform: translateY(-5px) scale(1.02);
-                box-shadow: 0 12px 24px rgba(0, 191, 255, 0.6), 0 16px 50px rgba(255, 140, 0, 0.3);
                 cursor: pointer;
             }
-            /* .result_card img {
-                width: 100%;
-                height: 250px;
-                object-fit: cover;
-                border-radius: 15px 15px 0 0;
-                transition: transform 0.3s ease;
-                z-index: 1;
-            } */
              .card-thumbnail, .video-preview {
                 width: 100%;
                 height: 250px;
@@ -191,27 +217,49 @@
             .result_card:hover .overlay {
                 opacity: 1;
             }
+            .modal {
+                backdrop-filter: blur(12px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+            }
             .modal-content {
-                background: rgba(10, 10, 30, 0.95);
-                border: 2px solid #FF8C00;
+                background: rgba(10, 20, 40, 0.85);
                 border-radius: 12px;
                 color: #FFF;
+                font-family: "Roboto", sans-serif;
+            }
+            .modal-video .modal-content {
+                border: 2px solid #FF8C00;
                 box-shadow: 0 0 30px rgba(255, 145, 0, 0.5);
-                font-family: "Montserrat", sans-serif;
             }
-            .modal-header {
+            .modal-video .modal-header {
                 border-bottom: 1px solid #FF8C00;
+                text-shadow: 0 0 6px rgba(255, 125, 0, 0.8);
             }
-            .modal-title {
+            .modal-video .modal-title, .modal-video .mission-label {
                 color: #FF8C00;
+            }
+            .modal-video #mediaModalBody video {
+                border-radius: 10px;
+                box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
+            }
+            .modal-image .modal-content {
+                border: 2px solid #00BFFF;
+                box-shadow: 0 0 30px rgba(0, 191, 255, 0.5);
+            }
+            .modal-image .modal-header {
+                border-bottom: 1px solid #00BFFF;
+                text-shadow: 0 0 6px rgba(0, 170, 255, 0.8);
+            }
+            .modal-image .modal-title, .modal-image .mission-label {
+                color: #00BFFF;
+            }
+            .modal-image #mediaModalBody img {
+                border-radius: 10px;
+                box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
             }
             .modal-body {
                 position: relative;
                 padding: 1.5rem;
-            }
-            #mediaModalBody img, #mediaModalBody video {
-                border-radius: 10px;
-                box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
             }
             .mission-info {
                 position: relative;
@@ -225,10 +273,15 @@
                 width: 120%;
                 height: 120%;
                 border-radius: 50%;
-                border: 1px dashed rgba(255, 145, 0, 0.4);
                 transform: translate(-50%, -50%);
             }
-            .mission-label {
+            .modal-video .mission-info::before {
+                border: 1px dashed rgba(255, 145, 0, 0.4);
+            }
+            .modal-image .mission-info::before {
+                border: 1px dashed rgba(0, 191, 255, 0.4);
+            }
+            .btn-close:hover {
                 color: #FF8C00;
             }
             #backToTop {
@@ -452,11 +505,15 @@
             }
 
             function openModal(card) {
+                const modalElement = document.getElementById("mediaModal");
+                modalElement.classList.remove("modal-video", "modal-image");
+
                 const title = card.dataset.title;
                 const description = card.dataset.description;
                 const mediaType = card.dataset.mediaType.toLowerCase();
                 const asset = card.dataset.asset;
                 const thumbnail = card.dataset.thumbnail;
+
 
                 modalTitle.textContent = title || "N/A";
                 modalDescription.textContent = description || "N/A";
@@ -474,12 +531,14 @@
                     video.controls = true;
                     video.autoplay = false;
                     video.style.maxWidth = "100%";
+                    modalElement.classList.add("modal-video");
                     modalBody.appendChild(video);
                 } else {
                     const img = document.createElement("img");
                     img.src = asset;
                     img.alt = title;
                     img.style.maxWidth = "100%";
+                    modalElement.classList.add("modal-image");
                     modalBody.appendChild(img);
                 }
 
