@@ -235,7 +235,6 @@ def search_query(query: str, inverted_index: dict[str, dict[str, list[int]]], id
 
     # Preprocess the query to create a list of tokens
     query_terms = preprocess_text(query)
-    print(f"Processed query terms: {query_terms}")
 
     # Calculate the document scores for the query against the TF-IDF index
     ranked_docs = score_query(query_terms, inverted_index, idf_scores, doc_lengths, avg_doc_length)
