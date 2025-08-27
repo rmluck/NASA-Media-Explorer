@@ -46,6 +46,7 @@
                 text-shadow: 0 0 6px rgba(0, 191, 255, 0.8), 0 0 12px rgba(0, 191, 255, 0.5);
                 font-size: clamp(2rem, 4vw, 3rem);
                 margin-bottom: 2rem;
+                margin-top: 2rem;
                 text-align: center;
             }
             .search-container {
@@ -104,6 +105,43 @@
                 flex-shrink: 0;
             }
 
+            #apodBanner {
+                background: rgba(10, 20, 40, 0.85);
+                max-width: 700px;
+                box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 2rem;
+            }
+
+            #apodLabel {
+                font-family: "Orbitron", sans-serif;
+                text-shadow: 0 0 6px rgba(255, 115, 0, 0.8);
+                color: #FF8C00;
+            }
+
+            #apodTitle {
+                font-family: "Roboto", sans-serif;
+                font-weight: 700;
+                color: #30A8CF;
+            }
+
+            #apodMedia img {
+                object-fit: cover;
+                max-height: 225px;
+                max-width: 100%;
+                height: auto;
+                overflow: hidden;
+                border-radius: 2px;
+            }
+
+            #apodExplanation {
+                font-family: "Roboto", sans-serif;
+                color: #FFF;
+                max-height: 150px;
+                overflow: auto;
+                text-align: justify;
+            }
+
             @media (max-width: 500px) {
                 .search-container input {
                     width: 100%;
@@ -124,8 +162,14 @@
                 placeholder="Search NASA media library..."
                 required
             >
-            <button type="submit">Search</button>
-        </form>
+            <button type="submit">Search</button>  
+            </form>
+            <div id="apodBanner" class="apod-banner text-center mt-4 p-3 rounded">
+                <h3 id="apodLabel">Astronomy Picture of the Day</h3>
+                <h5 id="apodTitle"></h5>
+                <div id="apodMedia" class="my-3"></div>
+                <p id="apodExplanation"></p>
+            </div>
         </main>
         <script>
             document.getElementById("searchForm").addEventListener("submit", function(event) {
@@ -135,6 +179,41 @@
                     window.location.href = `/search?query=${encodeURIComponent(query)}`;
                 }
             });
+
+            async function loadAPOD() {
+                try {
+                    const res = await fetch("/apod");
+                    const data = await res.json();
+
+                    document.getElementById("apodTitle").textContent = data.title;
+                    document.getElementById("apodExplanation").textContent = data.explanation || "";
+
+                    const mediaContainer = document.getElementById("apodMedia");
+                    mediaContainer.innerHTML = "";
+
+                    if(data.media_type === "image") {
+                        const img = document.createElement("img");
+                        img.src = data.url;
+                        img.alt = data.title;
+                        img.style.maxWidth = "100%";
+                        img.style.borderRadius = "2px";
+                        mediaContainer.appendChild(img);
+                    } else if (data.media_type === "video") {
+                        const iframe = document.createElement("iframe");
+                        iframe.src = data.url;
+                        iframe.width = "100%";
+                        iframe.height = "500";
+                        iframe.frameborder = "0";
+                        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                        iframe.allowFullscreen = true;
+                        mediaContainer.appendChild(iframe);
+                    }
+                } catch (err) {
+                    console.error("Failed to load APOD:", err);
+                }
+            }
+
+            loadAPOD();
         </script>
         <footer>
             &copy; {{ year }} NASA Media Explorer

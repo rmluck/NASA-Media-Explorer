@@ -5,16 +5,17 @@ Main entry point for the NASA Media Explorer backend.
 
 import os
 import httpx
-import mimetypes
-from urllib.parse import quote, urlparse
+import json
+from urllib.parse import quote
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Query, Request, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
 from indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
 
 INDEX_DIR = "../data"
+NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 
 
 # Load index and metadata once on startup
@@ -147,9 +148,34 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
 
     return {"results": paged_results, "total_results": total_results}
 
-# Card design upgrade:
-# Add a hover comet streak effect or shimmer
-# Show animated satellite as loading indicator
-# Smooth fade-in animation for cards as they load
-# Mission info could have radar-style or orbit-themed graphics
-# Add mission patch icons for missions, centers, etc.
+@app.get("/apod")
+async def get_apod():
+    today_date = datetime.utcnow().strftime("%Y-%m-%d")
+    apod_file = os.path.join(INDEX_DIR, "apod.json")
+
+    try:
+        with open(apod_file, "r") as file:
+            cached_apod = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        cached_apod = {}
+
+    if cached_apod.get("date") == today_date:
+        return JSONResponse(cached_apod)
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"https://api.nasa.gov/planetary/apod?api_key={NASA_API_KEY}")
+            response.raise_for_status()
+            apod_data = response.json()
+        except Exception as e:
+            return JSONResponse(
+                {"error": "Failed to fetch APOD", "details": str(e)}, status_code=500
+            )
+        
+    try:
+        with open(apod_file, "w") as file:
+            json.dump(apod_data, file, indent=2)
+    except Exception as e:
+        print("Failed to save APOD to JSON: ", e)
+    
+    return JSONResponse(apod_data)
