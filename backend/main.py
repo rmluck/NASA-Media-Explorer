@@ -4,10 +4,12 @@ Main entry point for the NASA Media Explorer backend.
 
 
 import os
-from urllib.parse import quote
+import httpx
+import mimetypes
+from urllib.parse import quote, urlparse
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Query, Request, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
 from indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
@@ -93,7 +95,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
     )
 
 @app.get("/api/search")
-def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = None, end_year: int = None, media_type: str = None):
+def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
     # Run the search query using the loaded index and metadata
     results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
@@ -103,9 +105,9 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
         metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
 
         year = int(metadata.get("date_created", "0")[:4])
-        if start_year and year < start_year:
+        if year < start_year:
             continue
-        if end_year and year > end_year:
+        if year > end_year:
             continue
 
         if media_type and metadata.get("media_type") != media_type:
@@ -146,7 +148,6 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
     return {"results": paged_results, "total_results": total_results}
 
 # Card design upgrade:
-# Add download button for assets
 # Add a hover comet streak effect or shimmer
 # Show animated satellite as loading indicator
 # Smooth fade-in animation for cards as they load

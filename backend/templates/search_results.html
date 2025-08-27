@@ -11,6 +11,9 @@
             body {
                 font-family: "Roboto", sans-serif;
                 color: #FFF;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
             }
             body::before {
                 content: "";
@@ -24,30 +27,154 @@
                 pointer-events: none;
                 z-index: -1;
             }
+            @keyframes moveGradient {
+                0% { background-position: 0% }
+                100% { background-position: 100% }
+            }
+            main {
+                flex: 1 0 auto;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                /* justify-content: center; */
+            }
             .search-header {
                 position: relative;
-                padding: 1rem;
+                padding: 1.5rem;
+                margin-top: 1rem;
                 margin-bottom: 2rem;
+                background: rgba(10, 20, 40, 0.85);
+                border-radius: 12px;
+                box-shadow: 0 0 20px rgba(0, 191, 255, 0.3), inset 0 0 10px rgba(255, 145, 0, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.1);
             }
-            h1 {
+            .search-header::after {
+                content: "";
+                display: block;
+                width: 100%;
+                height: 2px;
+                margin-top: 1rem;
+                background: linear-gradient(90deg, #00CFFF, #FF784A, #00CFFF);
+                animation: moveGradient 3s linear infinite;
+            }
+            .search {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+            }
+            .search-title h1 {
                 font-family: "Orbitron", sans-serif;
-                font-weight: 500;
                 color: #30A8CF;
+                text-shadow: 0 0 6px rgba(0, 191, 255, 0.8), 0 0 12px rgba(0, 191, 255, 0.5);
+                margin: 0;
+                /* flex: 0 0 65%; */
+                overflow: hidden;
+                /* margin-left: 25px; */
+                /* vertical-align: middle; */
+                font-size: clamp(1.5rem, 2vw, 2rem);
+                text-overflow: ellipsis;
+                padding-top: 1rem;
+            }
+            .search-bar-container {
+                min-width: 200px;
+                flex: 0.75;
+                /* flex-direction: column; */
+            }
+            .search-bar-container form {
+                background: rgba(20, 30, 50, 0.75);
+                padding: 0.5rem;
+                border-radius: 8px;
+                box-shadow: 0 0 8px rgba(0, 191, 255, 0.4), 0 0 4px rgba(255, 145, 0, 0.2);
+            }
+            #searchInput {
+                background: rgba(10, 20, 40, 0.85);
+                color: rgba(0, 191, 255, 1);
+                border: 1px solid rgba(0, 191, 255, 0.6);
+                border-radius: 6px;
+                padding: 0.5rem 0.75rem;
+                font-family: "Roboto", sans-serif;
+                box-shadow: inset 0 0 5px rgba(0, 191, 255, 0.4);
+            }
+            #searchInput:focus {
+                outline: none;
+                border-color: #FF8C00;
+                box-shadow: 0 0 10px rgba(255, 145, 0, 0.6);
+            }
+            #searchInput::placeholder {
+                color: rgba(255, 255, 255, 0.8);
+            }
+            #searchForm button {
+                background-color: #FF8C00;
+                color: #FFF;
+                border: none;
+                border-radius: 6px;
+                font-family: "Roboto", sans-serif;
+                font-weight: 500;
+                box-shadow: 0 0 8px rgba(255, 145, 0, 0.5);
+                transition: all 0.2s ease;
+            }
+            #searchForm button:hover {
+                background-color: #FF9C33;
+                transform: translateY(-2px);
+                box-shadow: 0 0 12px rgba(255, 145, 0, 0.7);
+            }
+            .filters label {
+                font-family: "Roboto", sans-serif;
+                color: #FFF;
+                font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 0 0 4px rgba(0, 191, 255, 0.5);
+                margin-top: 0.4rem;
+            }
+            .filters > div::before {
+                content: "";
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+                margin-right: 0.5rem;
+                border-radius: 50%;
+                background: linear-gradient(45deg, #00FFF0, #00BFFF);
+                box-shadow: 0 0 6px rgba(0, 191, 255, 0.8);
+                vertical-align: middle;
             }
             .filters {
                 display: flex;
-                flex-wrap: nowrap;
-                gap: 8%;
-                align-items: center;
-                width: 100%;
+                flex-wrap: wrap;
+                gap: 2rem;
+                /* width: 100%; */
             }
             #year-filter {
-                flex: 0 0 80%;
+                /* flex: 0 0 81.5%; */
+                margin-left: 15px;
+                margin-right: 22px;
+                padding-top: 10px;
             }
             #media-filter {
-                flex: 0 0 12.5%;
-                display: flex;
-                flex-direction: column;
+                /* flex: 0 0 11%; */
+                flex: 0.2;
+                /* display: flex; */
+                /* flex-direction: column; */
+            }
+            .filters > div {
+                background: rgba(20, 30, 50, 0.75);
+                padding: 0.75rem 1rem;
+                border-radius: 8px;
+                box-shadow: 0 0 8px rgba(0, 191, 255, 0.4), 0 0 4px rgba(255, 145, 0, 0.2);
+                transition: transform 0.2s ease;
+                flex: 1;
+                min-width: 200px;
+            }
+            .filters > div:hover {
+                transform: translateY(-2px) scale(1.02);
+                box-shadow: 0 0 12px rgba(0, 191, 255, 0.6), 0 0 6px rgba(255, 145, 0, 0.3);
+            }
+            @media (max-width: 768px) {
+                .search-title, .search-bar-container, #media-filter, #year-filter {
+                    flex: 1 1 100%;
+                }
             }
             #year-range {
                 width: 100%;
@@ -225,7 +352,7 @@
                 background: rgba(10, 20, 40, 0.85);
                 border-radius: 12px;
                 color: #FFF;
-                font-family: "Roboto", sans-serif;
+                font-family: "Orbitron", sans-serif;
             }
             .modal-video .modal-content {
                 border: 2px solid #FF8C00;
@@ -242,6 +369,10 @@
                 border-radius: 10px;
                 box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
             }
+            .modal-video #downloadBtn {
+                background-color: #FF8C00;
+                border: 1px solid #FF8C00;
+            }
             .modal-image .modal-content {
                 border: 2px solid #00BFFF;
                 box-shadow: 0 0 30px rgba(0, 191, 255, 0.5);
@@ -257,9 +388,14 @@
                 border-radius: 10px;
                 box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
             }
+            .modal-image #downloadBtn {
+                background-color: #00BFFF;
+                border: 1px solid #00BFFF;
+            }
             .modal-body {
                 position: relative;
                 padding: 1.5rem;
+                font-family: "Montserrat", sans-serif;
             }
             .mission-info {
                 position: relative;
@@ -309,17 +445,30 @@
                 transition: background-color 0.3s ease;
             }
             footer {
-                margin-top: auto;
+                /* margin-top: 3rem; */
                 padding: 1rem;
                 text-align: center;
                 background-color: #1F2833;
+                /* width: 100%; */
+                flex-shrink: 0;
             }
         </style>
     </head>
     <body class="bg-dark text-light">
+        <main class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
         <div class="container py-4">
             <div class="search-header">
-                <h1 class="mb-4">Search Results for "{{ query }}"</h1>
+                <div class="search d-flex">
+                    <div class="search-title">
+                        <h1 class="mb-4">Search Results for "{{ query }}"</h1>
+                    </div>
+                    <div class="search-bar-container my-3">
+                        <form id="searchForm" class="d-flex">
+                            <input type="text" id="searchInput" name="query" class="form-control me-2" placeholder="Search NASA media library..." value="" required>
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </form>
+                    </div>
+                </div>
                 <div class="filters">
                     <div id="year-filter" class="my-4">
                         <div class="year-labels">
@@ -381,7 +530,7 @@
                         <p id="mediaDescription" class="mt-3" style="text-align: left;"></p>
                         <div class="mission-info">
                             <ul class="list-unstyled text-start mt-3">
-                                <li><strong class="mission-label">Date Created</strong>: <span id="mediaDate"></span></li>
+                                <li><strong class="mission-label">Date</strong>: <span id="mediaDate"></span></li>
                                 <li><strong class="mission-label">Location</strong>: <span id="mediaLocation"></span></li>
                                 <li><strong class="mission-label">Center</strong>: <span id="mediaCenter"></span></li>
                                 <li><strong class="mission-label">Photographer</strong>: <span id="mediaPhotographer"></span></li>
@@ -389,10 +538,14 @@
                             </ul>
                         </div>
                     </div>
+                    <div class="modal-footer">
+                        <a id="downloadBtn" class="btn btn-primary" target="_blank">Download</a>
+                    </div>
                 </div>
             </div>
         </div>
         <button id="backToTop" title="Go to top">↑</button>
+        </main>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/nouislider/dist/nouislider.min.js"></script>
         <script>
@@ -408,6 +561,8 @@
             const resultsGrid = document.getElementById("results_grid");
             const slider = document.getElementById("year-range");
             const media = document.getElementById("media-type");
+            const searchForm = document.getElementById("searchForm");
+            const searchInput = document.getElementById("searchInput");
 
             const modal = new bootstrap.Modal(document.getElementById("mediaModal"));
             const modalTitle = document.getElementById("mediaModalLabel");
@@ -418,8 +573,17 @@
             const modalCenter = document.getElementById("mediaCenter");
             const modalPhotographer = document.getElementById("mediaPhotographer");
             const modalKeywords = document.getElementById("mediaKeywords");
+            const downloadBtn = document.getElementById("downloadBtn");
 
             const backToTopBtn = document.getElementById("backToTop");
+
+            searchForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const newQuery = searchInput.value.trim();
+                if (newQuery) {
+                    window.location.href = `/search?query=${encodeURIComponent(newQuery)}`;
+                }
+            });
 
             noUiSlider.create(slider, {
                 start: [1920, 2025],
@@ -542,8 +706,21 @@
                     modalBody.appendChild(img);
                 }
 
+                downloadBtn.href = asset;
+                // const fileName = asset.split("/").pop() || "nasa_media";
+                // downloadBtn.setAttribute("download", fileName);
+
                 modal.show();
             }
+
+            const mediaModalElement = document.getElementById("mediaModal");
+            mediaModalElement.addEventListener("hidden.bs.modal", () => {
+                const video = mediaModalElement.querySelector("video");
+                if (video) {
+                    video.pause();
+                    video.currentTime = 0;
+                }
+            });
 
             window.addEventListener("scroll", async () => {
                 if (loading) return;
