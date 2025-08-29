@@ -1,9 +1,10 @@
 {
-  "date": "2025-08-27",
-  "explanation": "That yellow spot -- what is it? It's a young planet outside our Solar System. The featured image from the Very Large Telescope in Chile surprisingly captures a distant scene much like our own Solar System's birth, some 4.5 billion years ago.  Although we can't look into the past and see Earth's formation directly, telescopes let us watch similar processes unfolding around distant stars.  At the center of this frame lies a young Sun-like star, hidden behind a coronagraph that blocks its bright glare.  Surrounding the star is a bright, dusty protoplanetary disk -- the raw material of planets.  Gaps and concentric rings mark where a newborn world is gathering gas and dust under its gravity, clearing the way as it orbits the star.  Although astronomers have imaged disk-embedded planets before, this is the first-ever observation of an exoplanet actively carving a gap within a disk -- the earliest direct glimpse of planetary sculpting in action.",
-  "hdurl": "https://apod.nasa.gov/apod/image/2508/Wispit4b_eso_960.jpg",
+  "copyright": "Katelyn Beecroft",
+  "date": "2025-08-29",
+  "explanation": "The diffuse hydrogen-alpha glow of emission region Sh2-27 fills this cosmic scene. The field of view spans nearly 3 degrees across the nebula-rich constellation Ophiuchus toward the central Milky Way. A Dark Veil of wispy interstellar dust clouds draped across the foreground is chiefly identified as LDN 234 and LDN 204 from the 1962 Catalog of Dark Nebulae by American astronomer Beverly Lynds. Sh2-27 itself is the large but faint HII region surrounding runaway O-type star Zeta Ophiuchi. Along with the Zeta Oph HII region, LDN 234 and LDN 204 are likely 500 or so light-years away. At that distance, this telescopic frame would be about 25 light-years wide.",
+  "hdurl": "https://apod.nasa.gov/apod/image/2508/DarkVeil_v2p2048.jpeg",
   "media_type": "image",
   "service_version": "v1",
-  "title": "WISPIT 2b: Exoplanet Carves Gap in Birth Disk",
-  "url": "https://apod.nasa.gov/apod/image/2508/Wispit4b_eso_960.jpg"
+  "title": "A Dark Veil in Ophiuchus",
+  "url": "https://apod.nasa.gov/apod/image/2508/DarkVeil_v2p1024.jpeg"
 }

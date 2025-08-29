@@ -9,8 +9,10 @@ import os
 import math
 import re
 
+# Define domain-specific stopwords
 DOMAIN_STOPWORDS = {"nasa", "nasa_id", "nasa_url", "media_type", "title", "description", "keywords", "location", "date_created", "image", "video", "audio", "thumbnail", "media", "photo", "photograph", "space", "nasa", "center", "science"}
 
+# Define general NASA-related patterns to preserve during text preprocessing
 GENERAL_NASA_PATTERNS = {
     r"\b[A-Z][a-zA-Z]+[- ]?\d+\b",  # Matches patterns like "Apollo 11", "Voyager-1"
     r"\b[A-Z]{2,}-?\d*\b",      # Matches patterns like "ISS-123", "HST-456"
@@ -19,6 +21,7 @@ GENERAL_NASA_PATTERNS = {
     r"\b\d{3,}\b",              # Matches any number with 3 or more digits
 }
 
+# Define field weights for indexing
 FIELD_WEIGHTS = {
     "title": 3.0,
     "keywords": 2.0,
@@ -41,6 +44,7 @@ def preprocess_text(text: str) -> list[str]:
         list[str]: The list of processed tokens.
     """
 
+    # Find and preserve specific NASA-related patterns before general preprocessing
     preserved_tokens = []
     for pattern in GENERAL_NASA_PATTERNS:
         matches = re.findall(pattern, text, flags=re.IGNORECASE)
@@ -273,5 +277,6 @@ def build_index(corpus_dir: str):
 
 
 if __name__ == "__main__":
+    # Build the index for the corpus directory
     corpus_dir = "data/nasa_full_corpus"
     build_index(corpus_dir)

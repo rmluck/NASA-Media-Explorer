@@ -5,14 +5,15 @@ Searches for a query in the indexed corpus and returns the top results.
 
 import json
 import os
-import math
-from collections import Counter, defaultdict
+from collections import defaultdict
 from .indexer import preprocess_text
 
+# Define weights and parameters for scoring
 PHRASE_WEIGHT = 2.0
 BM25_K = 1.5
 BM25_B = 0.75
 
+# Define the data directory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 
 
@@ -189,6 +190,7 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
         int: The count of the exact phrase occurrences in the document.
     """
 
+    # If the query has less than 2 tokens, it cannot be a phrase
     if len(query_tokens) < 2:
         return 0
     
@@ -197,12 +199,15 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
     if first_token not in inverted_index or doc_id not in inverted_index[first_token]:
         return 0
     
+    # Get the positions of the first token in the document
     first_positions = inverted_index[first_token][doc_id]["positions"]
 
+    # Iterate through the positions of the first token to find matching phrases
     phrase_count = 0
     for pos in first_positions:
         # Check if the subsequent tokens in the phrase match the positions
         match = True
+        # Check for each subsequent token in the phrase
         for offset, token in enumerate(query_tokens[1:], start=1):
             if token not in inverted_index or doc_id not in inverted_index[token]:
                 match = False
@@ -211,6 +216,7 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
                 match = False
                 break
         
+        # If all tokens matched in sequence, increment the phrase count
         if match:
             phrase_count += 1
 
@@ -256,6 +262,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
         dict: The metadata for the document.
     """
         
+    # Check if the document ID exists in the lookup
     lookup_info = doc_lookup.get(doc_id, None)
     if lookup_info is None:
         return {"error": "Document not found"}
@@ -273,6 +280,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
 
 
 if __name__ == "__main__":
+    # Load the index data
     index_dir = "data"
     inverted_index = load_inverted_index(os.path.join(index_dir, "inverted_index.json"))
     idf_scores = load_idf_scores(os.path.join(index_dir, "idf_scores.json"))
@@ -280,14 +288,15 @@ if __name__ == "__main__":
     doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))
     avg_doc_length = load_avg_doc_length(os.path.join(index_dir, "avg_doc_length.json"))
 
+    # Run a sample query
     query = "Apollo 11"
     ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
     doc_lookup = load_doc_lookup(os.path.join(index_dir, "doc_lookup.json"))
 
+    # Print the top 20 results with their titles and scores
     metadata_cache = {}
-
     for doc_id, score in ranked_docs[:20]:
         # Get metadata for the document
         doc_metadata = get_doc_metadata(doc_id, doc_lookup, metadata_cache)

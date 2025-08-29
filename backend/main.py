@@ -6,6 +6,7 @@ Main entry point for the NASA Media Explorer backend.
 import os
 import httpx
 import json
+import pytz
 from urllib.parse import quote
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
@@ -150,7 +151,8 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
 
 @app.get("/apod")
 async def get_apod():
-    today_date = datetime.utcnow().strftime("%Y-%m-%d")
+    nasa_timezone = pytz.timezone("US/Eastern")
+    today_date = datetime.now(nasa_timezone).strftime("%Y-%m-%d")
     apod_file = os.path.join(INDEX_DIR, "apod.json")
 
     try:

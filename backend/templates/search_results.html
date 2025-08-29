@@ -8,53 +8,111 @@
         <link href="https://cdn.jsdelivr.net/npm/nouislider/dist/nouislider.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
         <style>
+            :root {
+                --white: 255, 255, 255;
+                --black: 0, 0, 0;
+                --dark-blue-1: 10, 10, 48;
+                --dark-blue-2: 26, 26, 64;
+                --dark-blue-3: 0, 10, 32;
+                --dark-blue-4: 10, 26, 64;
+                --dark-blue-5: 10, 20, 40;
+                --navy-blue: 31, 40, 51;
+                --light-blue-1: 0, 191, 255;
+                --light-blue-2: 48, 168, 207;
+                --orange: 255, 145, 0;
+                --dark-orange: 255, 112, 0;
+                --light-orange: 255, 156, 51;
+                --orange-red: 255, 120, 74;
+            }
             body {
-                font-family: "Roboto", sans-serif;
-                color: #FFF;
                 display: flex;
                 flex-direction: column;
+
                 min-height: 100vh;
+
+                background-color: rgb(var(--black));
+                color: rgb(var(--white));
+
+                font-family: "Roboto", sans-serif;
             }
             body::before {
-                content: "";
                 position: fixed;
                 top: 0;
                 left: 0;
+
+                z-index: -2;
+                content: "";
+
                 width: 100%;
                 height: 100%;
-                background: url("https://w0.peakpx.com/wallpaper/622/373/HD-wallpaper-black-space-black-star-stars-thumbnail.jpg") repeat;
-                opacity: 0.5;
+
+                background: linear-gradient(-45deg, rgb(var(--dark-blue-1)), rgb(var(--dark-blue-2)), rgb(var(--dark-blue-3)), rgb(var(--dark-blue-4)), rgb(var(--black)));
+                background-size: 400% 400%;
+
+                animation: gradientShift 60s ease infinite;
                 pointer-events: none;
-                z-index: -1;
             }
-            @keyframes moveGradient {
-                0% { background-position: 0% }
-                100% { background-position: 100% }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50% }
+                50% { background-position: 100% 50% }
+                100% { background-position: 0% 50% }
+            }
+            .stars {
+                position: fixed;
+                top: 0;
+                left: 0;
+
+                z-index: -1;
+
+                width: 100%;
+                height: 100%;
+            }
+            .star {
+                position: absolute;
+                
+                opacity: 0.8;
+
+                width: 2px;
+                height: 2px;
+
+                background-color: rgb(var(--white));
+                border-radius: 50%;
+
+                animation: twinkle 3s infinite ease-in-out alternate;
+            }
+            @keyframes twinkle {
+                0% { opacity: 0.2; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.5); }
+                100% { opacity: 0.2; transform: scale(1); }
             }
             main {
-                flex: 1 0 auto;
                 display: flex;
+                flex: 1 0 auto;
                 flex-direction: column;
                 align-items: center;
-                /* justify-content: center; */
             }
-            .search-header {
+            .search_header {
                 position: relative;
-                padding: 1.5rem;
+
                 margin-top: 1rem;
                 margin-bottom: 2rem;
-                background: rgba(10, 20, 40, 0.85);
+                padding: 1.5rem;
+
+                background-color: rgba(var(--dark-blue-5), 0.85);
+                border: 1px solid rgba(var(--white), 0.1);
                 border-radius: 12px;
-                box-shadow: 0 0 20px rgba(0, 191, 255, 0.3), inset 0 0 10px rgba(255, 145, 0, 0.2);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 0 20px rgba(var(--light-blue-1), 0.3), inset 0 0 10px rgba(var(--orange), 0.2);
             }
-            .search-header::after {
-                content: "";
+            .search_header::after {
                 display: block;
+                content: "";
+
+                margin-top: 1rem;
                 width: 100%;
                 height: 2px;
-                margin-top: 1rem;
-                background: linear-gradient(90deg, #00CFFF, #FF784A, #00CFFF);
+
+                background: linear-gradient(90deg, rgb(var(--light-blue-1)), rgb(var(--orange-red)), rgb(var(--light-blue-1)));
+
                 animation: moveGradient 3s linear infinite;
             }
             .search {
@@ -64,265 +122,271 @@
                 align-items: center;
                 gap: 1rem;
             }
-            .search-title h1 {
-                font-family: "Orbitron", sans-serif;
-                color: #30A8CF;
-                text-shadow: 0 0 6px rgba(0, 191, 255, 0.8), 0 0 12px rgba(0, 191, 255, 0.5);
-                margin: 0;
-                /* flex: 0 0 65%; */
+            #searchTitle {
                 overflow: hidden;
-                /* margin-left: 25px; */
-                /* vertical-align: middle; */
-                font-size: clamp(1.5rem, 2vw, 2rem);
-                text-overflow: ellipsis;
+
+                margin: 0;
                 padding-top: 1rem;
+
+                color: rgb(var(--light-blue-2));
+
+                font-size: clamp(1.5rem, 2vw, 2rem);
+                font-family: "Orbitron", sans-serif;
+                text-shadow: 0 0 6px rgba(var(--light-blue-1), 0.8), 0 0 12px rgba(var(--light-blue-1), 0.5);
+                text-overflow: ellipsis;
             }
-            .search-bar-container {
-                min-width: 200px;
+            #searchBar {
                 flex: 0.75;
-                /* flex-direction: column; */
+
+                min-width: 200px;
             }
-            .search-bar-container form {
-                background: rgba(20, 30, 50, 0.75);
+            #searchForm {
                 padding: 0.5rem;
+
+                background-color: rgba(var(--dark-blue-4), 0.75);
                 border-radius: 8px;
-                box-shadow: 0 0 8px rgba(0, 191, 255, 0.4), 0 0 4px rgba(255, 145, 0, 0.2);
+                box-shadow: 0 0 8px rgba(var(--light-blue-1), 0.4), 0 0 4px rgba(var(--orange), 0.2);
             }
             #searchInput {
-                background: rgba(10, 20, 40, 0.85);
-                color: rgba(0, 191, 255, 1);
-                border: 1px solid rgba(0, 191, 255, 0.6);
-                border-radius: 6px;
                 padding: 0.5rem 0.75rem;
+
+                background-color: rgba(var(--dark-blue-5), 0.85);
+                border: 1px solid rgba(var(--light-blue-1), 0.6);
+                border-radius: 6px;
+                box-shadow: inset 0 0 5px rgba(var(--light-blue-1), 0.4);
+                color: rgb(var(--light-blue-1));
+
                 font-family: "Roboto", sans-serif;
-                box-shadow: inset 0 0 5px rgba(0, 191, 255, 0.4);
             }
             #searchInput:focus {
+                border-color: rgb(var(--orange));
                 outline: none;
-                border-color: #FF8C00;
-                box-shadow: 0 0 10px rgba(255, 145, 0, 0.6);
+                box-shadow: 0 0 10px rgba(var(--orange), 0.6);
             }
             #searchInput::placeholder {
-                color: rgba(255, 255, 255, 0.8);
+                color: rgba(var(--white), 0.8);
             }
-            #searchForm button {
-                background-color: #FF8C00;
-                color: #FFF;
+            #searchButton {
+                background-color: rgb(var(--orange));
                 border: none;
                 border-radius: 6px;
+                box-shadow: 0 0 8px rgba(var(--orange), 0.5);
+                color: rgb(var(--white));
+
                 font-family: "Roboto", sans-serif;
                 font-weight: 500;
-                box-shadow: 0 0 8px rgba(255, 145, 0, 0.5);
+
                 transition: all 0.2s ease;
             }
-            #searchForm button:hover {
-                background-color: #FF9C33;
+            #searchButton:hover {
+                background-color: rgb(var(--light-orange));
+                box-shadow: 0 0 12px rgba(var(--orange), 0.7);
+
                 transform: translateY(-2px);
-                box-shadow: 0 0 12px rgba(255, 145, 0, 0.7);
-            }
-            .filters label {
-                font-family: "Roboto", sans-serif;
-                color: #FFF;
-                font-size: 0.9rem;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                text-shadow: 0 0 4px rgba(0, 191, 255, 0.5);
-                margin-top: 0.4rem;
-            }
-            .filters > div::before {
-                content: "";
-                display: inline-block;
-                width: 10px;
-                height: 10px;
-                margin-right: 0.5rem;
-                border-radius: 50%;
-                background: linear-gradient(45deg, #00FFF0, #00BFFF);
-                box-shadow: 0 0 6px rgba(0, 191, 255, 0.8);
-                vertical-align: middle;
             }
             .filters {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 2rem;
-                /* width: 100%; */
             }
-            #year-filter {
-                /* flex: 0 0 81.5%; */
+            .filters > div {
+                flex: 1;
+
+                min-width: 200px;
+                padding: 0.75rem 1rem;
+
+                background-color: rgba(var(--dark-blue-4), 0.75);
+                border-radius: 8px;
+                box-shadow: 0 0 8px rgba(var(--light-blue-1), 0.4), 0 0 4px rgba(var(--orange), 0.2);
+
+                transition: transform 0.2s ease;
+            }            
+            .filters > div::before {
+                display: inline-block;
+                vertical-align: middle;
+                content: "";
+
+                margin-right: 0.5rem;
+                width: 10px;
+                height: 10px;
+
+                background: linear-gradient(45deg, rgb(var(--light-blue-1)), rgb(var(--light-blue-2)));
+                border-radius: 50%;
+                box-shadow: 0 0 6px rgba(var(--light-blue-1), 0.8);
+            }
+            .filters > div:hover {
+                box-shadow: 0 0 12px rgba(var(--light-blue-1), 0.6), 0 0 6px rgba(var(--orange), 0.3);
+
+                transform: translateY(-2px) scale(1.02);
+            }
+            .filters label {
+                margin-top: 0.4rem;
+
+                color: rgb(var(--white));
+                text-shadow: 0 0 4px rgba(var(--light-blue-1), 0.5);
+
+                font-size: 0.9rem;
+                font-family: "Roboto", sans-serif;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 0 0 4px rgba(var(--light-blue-1), 0.5);
+                margin-top: 0.4rem;
+            }
+            #yearFilter {
                 margin-left: 15px;
                 margin-right: 22px;
                 padding-top: 10px;
             }
-            #media-filter {
-                /* flex: 0 0 11%; */
-                flex: 0.2;
-                /* display: flex; */
-                /* flex-direction: column; */
-            }
-            .filters > div {
-                background: rgba(20, 30, 50, 0.75);
-                padding: 0.75rem 1rem;
-                border-radius: 8px;
-                box-shadow: 0 0 8px rgba(0, 191, 255, 0.4), 0 0 4px rgba(255, 145, 0, 0.2);
-                transition: transform 0.2s ease;
-                flex: 1;
-                min-width: 200px;
-            }
-            .filters > div:hover {
-                transform: translateY(-2px) scale(1.02);
-                box-shadow: 0 0 12px rgba(0, 191, 255, 0.6), 0 0 6px rgba(255, 145, 0, 0.3);
-            }
-            @media (max-width: 768px) {
-                .search-title, .search-bar-container, #media-filter, #year-filter {
-                    flex: 1 1 100%;
-                }
-            }
-            #year-range {
+            #yearRange {
                 width: 100%;
             }
-            /* #year-range .noUi-base {
-
-                background: linear-gradient(90deg, #037ef8, #ff6600);
-                height: 8px;
+            #yearRange .noUi-connect {
+                background: linear-gradient(90deg, rgb(var(--light-blue-1)), rgb(var(--orange-red)));
                 border-radius: 4px;
-                position: relative;
-            } */
-            #year-range .noUi-connect {
-                /* background: linear-gradient(90deg, #ab5018, #d6722b, #ef784a) */
-
-                background: linear-gradient(90deg, #00cfff, #ff784a);
-                /* height: 8px; */
-                border-radius: 4px;
-                box-shadow: 0 0 10px rgba(255, 120, 74, 0.8);
+                box-shadow: 0 0 10px rgba(var(--orange-red), 0.8);
             }
-            #year-range .noUi-handle {
-                /* background: #E0E1DD; */
-                /* border: 2px solid #778DA9; */
-                /* box-shadow: 0 0 8px rgba(119, 141, 169, 0.7); */
-                /* border-radius: 50%; */
-                /* width: 20px;
-                height: 20px; */
-
+            #yearRange .noUi-handle {
                 width: 40px;
                 height: 40px;
+
                 background: url("https://www.freeiconspng.com/uploads/blue-rocket-png-9.png") no-repeat center center;
                 background-size: contain;
                 border: none;
                 box-shadow: none;
+
                 cursor: grab;
             }
-            #year-range .noUi-handle:active {
+            #yearRange .noUi-handle:active {
                 transform: scale(1.1) rotate(-5deg);
                 transition: transform 0.1s ease;
             }
-            /* #year-range .noUi-handle {
-                cursor: grabbing;
-            } */
-            #year-range .noUi-handle::before, #year-range .noUi-handle::after {
+            #yearRange .noUi-handle::before, #yearRange .noUi-handle::after {
                 display: none;
             }
-            #year-range .noUi-tooltip {
-                background: #0A1A2F;
-                color: #FFF;
-                border-radius: 6px;
+            #yearRange .noUi-tooltip {
                 padding: 2px 6px;
+
+                background-color: rgb(var(--dark-blue-4));
+                border-radius: 6px;
+                color: rgb(var(--white));
+
                 font-size: 0.8rem;
                 font-weight: 500;
+
                 transition: transform 0.15s ease, opacity 0.15s ease;
             }
-            #year-range .noUi-handle-upper .noUi-tooltip {
+            #yearRange .noUi-handle-upper .noUi-tooltip {
                 transform: translateX(40%) translateY(95%);
             }
-            #year-range .noUi-handle-lower .noUi-tooltip {
+            #yearRange .noUi-handle-lower .noUi-tooltip {
                 transform: translateX(-110%) translateY(95%);
             }
-            #media-filter select {
-                width: 100%;
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                background-color: #0A1A2F;
-                color: #FFF;
-                appearance: none;
+            #mediaFilter {
+                flex: 0.2;
+            }
+            #mediaType {
                 -webkit-appearance: none;
                 -moz-appearance: none;
-                cursor: pointer;
+                appearance: none;
+
+                width: 100%;
+                padding: 0.5rem 1rem;
+
+                background-color: rgb(var(--dark-blue-1));
+                border-radius: 8px;
+                color: rgb(var(--white));
+
                 font-weight: 500;
+
                 transition: all 0.2s ease;
+                cursor: pointer;
             }
-            #media-filter select:hover, #media-filter select:focus {
-                background-color: #FF8C00;
-                border-color: #ff784a;
+            #mediaType:hover, #mediaType:focus {
+                background-color: rgb(var(--orange));
+                border-color: rgb(var(--orange-red));
             }
-            .results-container {
+            .results_container {
                 margin-top: 2rem;
                 padding: 1rem;
             }
             .result_card {
                 position: relative;
+
                 overflow: hidden;
+
+                background-color: rgb(var(--dark-blue-4));
                 border-radius: 15px;
-                cursor: pointer;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-                background: rgba(10, 10, 30, 0.85);
                 backdrop-filter: blur(4px);
+
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                cursor: pointer;
             }
             .result_card.image {
-                box-shadow: 0 8px 15px rgba(0, 191, 255, 0.4), 0 12px 40px rgba(255, 145, 0, 0.2);
-            }
-            .result_card.video {
-                box-shadow: 0 8px 15px rgba(255, 145, 0, 0.4), 0 12px 40px rgba(0, 191, 255, 0.2);
-            }
-            .result_card.image:hover {
-                box-shadow: 0 12px 24px rgba(0, 191, 255, 0.6), 0 16px 50px rgba(255, 145, 0, 0.3);
-            }
-            .result_card.video:hover {
-                box-shadow: 0 12px 24px rgba(255, 145, 0, 0.6), 0 16px 50px rgba(0, 191, 255, 0.3);
+                box-shadow: 0 8px 15px rgba(var(--light-blue-1), 0.4), 0 12px 40px rgba(var(--orange), 0.2);
             }
             .result_card:hover {
                 transform: translateY(-5px) scale(1.02);
                 cursor: pointer;
             }
-             .card-thumbnail, .video-preview {
+            .result_card.image:hover {
+                box-shadow: 0 12px 24px rgba(var(--light-blue-1), 0.6), 0 16px 50px rgba(var(--orange), 0.3);
+            }
+            .result_card.video {
+                box-shadow: 0 8px 15px rgba(var(--orange), 0.4), 0 12px 40px rgba(var(--light-blue-1), 0.2);
+            }
+            .result_card.video:hover {
+                box-shadow: 0 12px 24px rgba(var(--orange), 0.6), 0 16px 50px rgba(var(--light-blue-1), 0.3);
+            }
+            .card_thumbnail, .video_preview {
+                display: block;
+                z-index: 1;
+
                 width: 100%;
                 height: 250px;
-                display: block;
+
                 border-radius: 15px 15px 0 0;
                 transition: transform 0.3s ease;
-                z-index: 1;
-             }
-             .video-preview {
+            }
+            .video_preview {
                 position: absolute;
                 top: 0;
                 left: 0;
+
                 opacity: 0;
-                pointer-events: none;
+
                 transition: opacity 0.3s ease;
-             }
-             .result_card.video:hover .video-preview {
-                opacity: 1;
-             }
-             .result_card.video:hover .card-thumbnail {
-                opacity: 0;
-             }
-            .result_card:hover .card-thumbnail {
+                pointer-events: none;
+            }
+            .result_card:hover .card_thumbnail {
                 transform: scale(1.05);
             }
-            .media-badge {
+            .result_card.video:hover .card_thumbnail {
+                opacity: 0;
+            }
+            .result_card.video:hover .video_preview {
+                opacity: 1;
+            }
+            .media_badge {
                 position: absolute;
                 top: 0.5rem;
                 right: 0.5rem;
-                color: #FFF;
+
+                z-index: 2;
+
+                padding: 0.25rem 0.5rem;
+
+                border-radius: 5px;
+                color: rgb(var(--white));
+
                 font-size: 0.75rem;
                 font-weight: bold;
-                padding: 0.25rem 0.5rem;
-                border-radius: 5px;
-                z-index: 2;
                 text-transform: uppercase;
             }
-            .media-badge.video {
-                background-color: rgba(255, 140, 0, 0.7);
+            .media_badge.video {
+                background-color: rgba(var(--orange), 0.7);
             }
-            .media-badge.image {
-                background-color: rgba(0, 191, 255, 0.7);
+            .media_badge.image {
+                background-color: rgba(var(--light-blue-1), 0.7);
             }
             .overlay {
                 position: absolute;
@@ -330,221 +394,258 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-                color: #FFF;
-                padding: 10px;
-                text-align: center;
-                opacity: 0;
-                transition: opacity 0.3s ease;
+
                 display: flex;
-                align-items: flex-end;
                 justify-content: center;
+                align-items: flex-end;
+                opacity: 0;
                 z-index: 2;
+
+                padding: 10px;
+
+                background: linear-gradient(to top, rgba(var(--black), 0.85), transparent);
+                color: rgb(var(--white));
+
+                text-align: center;
+
+                transition: opacity 0.3s ease;
             }
             .result_card:hover .overlay {
                 opacity: 1;
             }
             .modal {
                 backdrop-filter: blur(12px);
+
                 transition: opacity 0.3s ease, transform 0.3s ease;
             }
             .modal-content {
-                background: rgba(10, 20, 40, 0.85);
+                background-color: rgba(var(--dark-blue-5), 0.85);
                 border-radius: 12px;
-                color: #FFF;
+                color: rgb(var(--white));
+
                 font-family: "Orbitron", sans-serif;
             }
-            .modal-video .modal-content {
-                border: 2px solid #FF8C00;
-                box-shadow: 0 0 30px rgba(255, 145, 0, 0.5);
+            .modal_video .modal-content {
+                border: 2px solid rgb(var(--orange));
+                box-shadow: 0 0 30px rgba(var(--orange), 0.5);
             }
-            .modal-video .modal-header {
-                border-bottom: 1px solid #FF8C00;
-                text-shadow: 0 0 6px rgba(255, 125, 0, 0.8);
+            .modal_video .modal-header {
+                border-bottom: 1px solid rgb(var(--orange));
+                text-shadow: 0 0 6px rgba(var(--orange), 0.8);
             }
-            .modal-video .modal-title, .modal-video .mission-label {
-                color: #FF8C00;
+            .modal_video .modal-title, .modal_video .mission_label {
+                color: rgb(var(--orange));
             }
-            .modal-video #mediaModalBody video {
+            .modal_video video {
                 border-radius: 10px;
-                box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
+                box-shadow: 0 0 20px rgba(var(--orange), 0.5);
             }
-            .modal-video #downloadBtn {
-                background-color: #FF8C00;
-                border: 1px solid #FF8C00;
+            .modal_video #downloadBtn {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                
+                background-color: rgb(var(--orange));
+                border: 1px solid rgb(var(--orange));
             }
-            .modal-image .modal-content {
-                border: 2px solid #00BFFF;
-                box-shadow: 0 0 30px rgba(0, 191, 255, 0.5);
+            .modal_image .modal-content {
+                border: 2px solid rgb(var(--light-blue-1));
+                box-shadow: 0 0 30px rgba(var(--light-blue-1), 0.5);
             }
-            .modal-image .modal-header {
-                border-bottom: 1px solid #00BFFF;
-                text-shadow: 0 0 6px rgba(0, 170, 255, 0.8);
+            .modal_image .modal-header {
+                border-bottom: 1px solid rgb(var(--light-blue-1));
+                text-shadow: 0 0 6px rgba(var(--light-blue-1), 0.8);
             }
-            .modal-image .modal-title, .modal-image .mission-label {
-                color: #00BFFF;
+            .modal_image .modal-title, .modal_image .mission_label {
+                color: rgb(var(--light-blue-1));
             }
-            .modal-image #mediaModalBody img {
+            .modal_image img {
                 border-radius: 10px;
-                box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+                box-shadow: 0 0 20px rgba(var(--light-blue-1), 0.5);
             }
-            .modal-image #downloadBtn {
-                background-color: #00BFFF;
-                border: 1px solid #00BFFF;
+            .modal_image #downloadBtn {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+
+                background-color: rgb(var(--light-blue-1));
+                border: 1px solid rgb(var(--light-blue-1));
             }
-            .modal-body {
+            .modal_body {
                 position: relative;
+
                 padding: 1.5rem;
+
                 font-family: "Montserrat", sans-serif;
             }
-            .mission-info {
+            .mission_info {
                 position: relative;
+
                 margin-top: 1rem;
             }
-            .mission-info::before {
-                content: "";
+            .mission_info::before {
                 position: absolute;
                 top: 50%;
                 left: 50%;
+
+                content: "";
+
                 width: 120%;
                 height: 120%;
+
                 border-radius: 50%;
+
                 transform: translate(-50%, -50%);
             }
-            .modal-video .mission-info::before {
-                border: 1px dashed rgba(255, 145, 0, 0.4);
+            .modal_video .mission_info::before {
+                border: 1px dashed rgba(var(--orange), 0.4);
             }
-            .modal-image .mission-info::before {
-                border: 1px dashed rgba(0, 191, 255, 0.4);
+            .modal_image .mission_info::before {
+                border: 1px dashed rgba(var(--light-blue-1), 0.4);
             }
-            .btn-close:hover {
-                color: #FF8C00;
+            .modal_close_btn:hover {
+                color: rgb(var(--orange));
             }
             #backToTop {
                 position: fixed;
                 bottom: 20px;
                 right: 30px;
-                background-color: #FF8C00;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                padding: 12px 20px;
-                font-size: 20px;
-                cursor: pointer;
-                box-shadow: 0 6px 10px rgba(255, 255, 255, 0.5);
-                transition: opacity 0.3s ease, transform 0.3s ease;
+
                 opacity: 0;
                 z-index: 99;
+
+                padding: 12px 20px;
+
+                background-color: rgb(var(--orange));
+                border: none;
+                border-radius: 50%;
+                box-shadow: 0 6px 10px rgba(var(--white), 0.5);
+                color: rgb(var(--white));
+
+                font-size: 20px;
+
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                cursor: pointer;
             }
             #backToTop.show {
                 opacity: 1;
+
                 transform: translateY(0);
             }
             #backToTop:hover {
-                background-color: #007B9E;
+                background-color: rgb(var(--light-blue-2));
+
                 transition: background-color 0.3s ease;
             }
             footer {
-                /* margin-top: 3rem; */
-                padding: 1rem;
-                text-align: center;
-                background-color: #1F2833;
-                /* width: 100%; */
                 flex-shrink: 0;
+
+                padding: 1rem;
+
+                background-color: rgb(var(--navy-blue));
+
+                text-align: center;
             }
+            @media (max-width: 768px) {
+                #searchTitle, #searchBar, #mediaFilter, #yearFilter {
+                    flex: 1 1 100%;
+                }
+            }
+            /* .modal-video #mediaModalBody video {
+                border-radius: 10px;
+                box-shadow: 0 0 20px rgba(255, 145, 0, 0.5);
+            } */
         </style>
     </head>
     <body class="bg-dark text-light">
         <main class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
-        <div class="container py-4">
-            <div class="search-header">
-                <div class="search d-flex">
-                    <div class="search-title">
-                        <h1 class="mb-4">Search Results for "{{ query }}"</h1>
+            <div class="container py-4">
+                <div class="search_header">
+                    <div class="search d-flex">
+                        <div>
+                            <h1 id="searchTitle" class="mb-4">Search Results for "{{ query }}"</h1>
+                        </div>
+                        <div id="searchBar" class="my-3">
+                            <form id="searchForm" class="d-flex">
+                                <input type="text" id="searchInput" name="query" class="form-control me-2" placeholder="Search NASA media library..." value="" required>
+                                <button type="submit" id="searchButton" class="btn btn-primary">Search</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="search-bar-container my-3">
-                        <form id="searchForm" class="d-flex">
-                            <input type="text" id="searchInput" name="query" class="form-control me-2" placeholder="Search NASA media library..." value="" required>
-                            <button type="submit" class="btn btn-primary">Search</button>
-                        </form>
+                    <div class="filters">
+                        <div id="yearFilter" class="my-4">
+                            <div class="year-labels">
+                                <label for="yearRange" class="block font-semibold mb-2">Year Range</label>
+                            </div>
+                            <div id="yearRange"></div>
+                        </div>
+                        <div id="mediaFilter" class="my-4">
+                            <label for="mediaType" class="block font-semibold mb-2">Media Type</label>
+                            <select id="mediaType">
+                                <option value="">All</option>
+                                <option value="image">Images</option>
+                                <option value="video">Videos</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <div class="filters">
-                    <div id="year-filter" class="my-4">
-                        <div class="year-labels">
-                            <label for="year-range" class="block font-semibold mb-2">Year Range</label>
+                <div class="results_container">
+                    <div class="row g-4" id="results_grid">
+                        {% for item in results %}
+                        <div class="col-md-3 col-sm-6">
+                            <div class="result_card {{ item.media_type }}"
+                                data-title="{{ item.title | default('N/A') }}"
+                                data-description="{{ item.description | default('N/A') }}"
+                                data-media-type="{{ item.media_type | default('N/A') }}"
+                                data-date="{{ item.date_created | default('N/A') }}"
+                                data-location="{{ item.location | default('N/A') }}"
+                                data-center="{{ item.center | default('N/A') }}"
+                                data-photographer="{{ item.photographer | default('N/A') }}"
+                                data-keywords="{{ item.keywords|join(', ') | default('N/A') }}"
+                                data-asset="{{ item.asset | default('N/A') }}"
+                                data-thumbnail="{{ item.thumbnail | default('N/A') }}"
+                                data-doc-id="{{ item.doc_id | default('N/A') }}">
+                                <img src="{{ item.thumbnail }}" alt="{{ item.title }}" class="card_thumbnail">
+                                {% if item.media_type == 'video' %}
+                                    <video class="video_preview" muted preload="metadata">
+                                        <source src="{{ item.asset }}" type="video/mp4">
+                                    </video>
+                                {% endif %}
+                                <span class="media_badge {{ item.media_type }}">{{ item.media_type | capitalize }}</span>
+                                <div class="overlay">{{ item.title }}</div>
+                            </div>
                         </div>
-                        <div id="year-range"></div>
+                        {% endfor %}
                     </div>
-                    <div id="media-filter" class="my-4">
-                        <label for="media-type" class="block font-semibold mb-2">Media Type</label>
-                        <select id="media-type">
-                            <option value="">All</option>
-                            <option value="image">Images</option>
-                            <option value="video">Videos</option>
-                        </select>
+                </div>   
+            </div>
+            <div class="modal fade" id="mediaModal" tabindex="-1" aria-labelledby="mediaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content bg-dark text-light">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="mediaModalLabel"></h5>
+                            <button type="button" class="btn-close btn-close-white modal_close_btn" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal_body text-center">
+                            <div id="mediaModalBody"></div>
+                            <p id="mediaDescription" class="mt-3" style="text-align: left;"></p>
+                            <div class="mission_info">
+                                <ul class="list-unstyled text-start mt-3">
+                                    <li><strong class="mission_label">Date</strong>: <span id="mediaDate"></span></li>
+                                    <li><strong class="mission_label">Location</strong>: <span id="mediaLocation"></span></li>
+                                    <li><strong class="mission_label">Center</strong>: <span id="mediaCenter"></span></li>
+                                    <li><strong class="mission_label">Photographer</strong>: <span id="mediaPhotographer"></span></li>
+                                    <li><strong class="mission_label">Keywords</strong>: <span id="mediaKeywords"></span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal_footer">
+                            <a id="downloadBtn" class="btn btn-primary" target="_blank">Download</a>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="results-container">
-                <div class="row g-4" id="results_grid">
-                    {% for item in results %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="result_card {{ item.media_type }}"
-                            data-title="{{ item.title | default('N/A') }}"
-                            data-description="{{ item.description | default('N/A') }}"
-                            data-media-type="{{ item.media_type | default('N/A') }}"
-                            data-date="{{ item.date_created | default('N/A') }}"
-                            data-location="{{ item.location | default('N/A') }}"
-                            data-center="{{ item.center | default('N/A') }}"
-                            data-photographer="{{ item.photographer | default('N/A') }}"
-                            data-keywords="{{ item.keywords|join(', ') | default('N/A') }}"
-                            data-asset="{{ item.asset | default('N/A') }}"
-                            data-thumbnail="{{ item.thumbnail | default('N/A') }}"
-                            data-doc-id="{{ item.doc_id | default('N/A') }}">
-                            <img src="{{ item.thumbnail }}" alt="{{ item.title }}" class="card-thumbnail">
-                            {% if item.media_type == 'video' %}
-                                <video class="video-preview" muted preload="metadata">
-                                    <source src="{{ item.asset }}" type="video/mp4">
-                                </video>
-                            {% endif %}
-                            <span class="media-badge {{ item.media_type }}">{{ item.media_type | capitalize }}</span>
-                            <div class="overlay">{{ item.title }}</div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            
-        </div>
-        <div class="modal fade" id="mediaModal" tabindex="-1" aria-labelledby="mediaModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-centered">
-                <div class="modal-content bg-dark text-light">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="mediaModalLabel"></h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <div id="mediaModalBody"></div>
-                        <p id="mediaDescription" class="mt-3" style="text-align: left;"></p>
-                        <div class="mission-info">
-                            <ul class="list-unstyled text-start mt-3">
-                                <li><strong class="mission-label">Date</strong>: <span id="mediaDate"></span></li>
-                                <li><strong class="mission-label">Location</strong>: <span id="mediaLocation"></span></li>
-                                <li><strong class="mission-label">Center</strong>: <span id="mediaCenter"></span></li>
-                                <li><strong class="mission-label">Photographer</strong>: <span id="mediaPhotographer"></span></li>
-                                <li><strong class="mission-label">Keywords</strong>: <span id="mediaKeywords"></span></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a id="downloadBtn" class="btn btn-primary" target="_blank">Download</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button id="backToTop" title="Go to top">↑</button>
+            <button id="backToTop" title="Go to top">↑</button>
         </main>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/nouislider/dist/nouislider.min.js"></script>
@@ -559,11 +660,10 @@
             let loading = false;
 
             const resultsGrid = document.getElementById("results_grid");
-            const slider = document.getElementById("year-range");
-            const media = document.getElementById("media-type");
+            const slider = document.getElementById("yearRange");
+            const media = document.getElementById("mediaType");
             const searchForm = document.getElementById("searchForm");
             const searchInput = document.getElementById("searchInput");
-
             const modal = new bootstrap.Modal(document.getElementById("mediaModal"));
             const modalTitle = document.getElementById("mediaModalLabel");
             const modalBody = document.getElementById("mediaModalBody");
@@ -574,8 +674,21 @@
             const modalPhotographer = document.getElementById("mediaPhotographer");
             const modalKeywords = document.getElementById("mediaKeywords");
             const downloadBtn = document.getElementById("downloadBtn");
-
             const backToTopBtn = document.getElementById("backToTop");
+            const starsContainer = document.createElement("div");
+            const mediaModalElement = document.getElementById("mediaModal");
+
+            starsContainer.classList.add("stars");
+            document.body.appendChild(starsContainer);
+
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement("div");
+                star.classList.add("star");
+                star.style.top = Math.random() * window.innerHeight + "px";
+                star.style.left = Math.random() * window.innerWidth + "px";
+                star.style.animationDuration = 1 + Math.random() * 3 + "s";
+                starsContainer.appendChild(star);
+            }
 
             searchForm.addEventListener("submit", (e) => {
                 e.preventDefault();
@@ -656,9 +769,9 @@
                         data-asset="${item.asset}"
                          data-thumbnail="${item.thumbnail}"
                          data-doc-id="${item.doc_id}">
-                        <img src="${item.thumbnail}" alt="${item.title}" class="card-thumbnail">
-                        ${item.media_type === "video" ? '<video class="video-preview" muted preload="metadata"><source src="' + item.asset + '" type="video/mp4"></video>' : ''}
-                        <span class="media-badge ${item.media_type}">${item.media_type}</span>
+                        <img src="${item.thumbnail}" alt="${item.title}" class="card_thumbnail">
+                        ${item.media_type === "video" ? '<video class="video_preview" muted preload="metadata"><source src="' + item.asset + '" type="video/mp4"></video>' : ''}
+                        <span class="media_badge ${item.media_type}">${item.media_type}</span>
                         <div class="overlay">${item.title}</div>
                     </div>
                     `;
@@ -668,9 +781,16 @@
                 offset += data.results.length;
             }
 
+            document.addEventListener("click", function(e) {
+                const card = e.target.closest(".result_card");
+                if (card) {
+                    openModal(card);
+                }
+            });
+
             function openModal(card) {
                 const modalElement = document.getElementById("mediaModal");
-                modalElement.classList.remove("modal-video", "modal-image");
+                modalElement.classList.remove("modal_video", "modal_image");
 
                 const title = card.dataset.title;
                 const description = card.dataset.description;
@@ -695,25 +815,23 @@
                     video.controls = true;
                     video.autoplay = false;
                     video.style.maxWidth = "100%";
-                    modalElement.classList.add("modal-video");
+                    modalElement.classList.add("modal_video");
                     modalBody.appendChild(video);
                 } else {
                     const img = document.createElement("img");
                     img.src = asset;
                     img.alt = title;
                     img.style.maxWidth = "100%";
-                    modalElement.classList.add("modal-image");
+                    modalElement.classList.add("modal_image");
                     modalBody.appendChild(img);
                 }
 
                 downloadBtn.href = asset;
-                // const fileName = asset.split("/").pop() || "nasa_media";
-                // downloadBtn.setAttribute("download", fileName);
 
                 modal.show();
             }
 
-            const mediaModalElement = document.getElementById("mediaModal");
+            
             mediaModalElement.addEventListener("hidden.bs.modal", () => {
                 const video = mediaModalElement.querySelector("video");
                 if (video) {
@@ -749,16 +867,9 @@
                 });
             });
 
-            document.addEventListener("click", function(e) {
-                const card = e.target.closest(".result_card");
-                if (card) {
-                    openModal(card);
-                }
-            });
-
             function initVideoHover() {
                 document.querySelectorAll(".result_card.video").forEach(card => {
-                    const video = card.querySelector(".video-preview");
+                    const video = card.querySelector(".video_preview");
                     card.addEventListener("mouseenter", () => {
                         video.currentTime = 0;
                         video.play();
