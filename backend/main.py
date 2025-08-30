@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app instance
 app = FastAPI(lifespan=lifespan)
-templates = Jinja2Templates(directory="../frontend/templates")
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "../frontend/templates"))
 
 
 @app.get("/")
