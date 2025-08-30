@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     sqlite_path = os.path.join(INDEX_DIR, "inverted_index.sqlite")
     if not os.path.exists(sqlite_path):
         download_sqlite_index()
-    app.state.sqlite_conn = sqlite3.connect(sqlite_path)
+    app.state.sqlite_conn = sqlite3.connect(sqlite_path, check_same_thread=False)
 
     try:
         yield
