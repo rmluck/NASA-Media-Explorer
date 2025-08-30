@@ -262,7 +262,7 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
     return phrase_count
 
 
-def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float, top_n: int = 200) -> list[tuple[str, float]]:
     """
     Search for a query in the indexed corpus and return the top results.
     
@@ -281,7 +281,7 @@ def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, flo
     query_terms = preprocess_text(query)
 
     # Calculate the document scores for the query
-    ranked_docs = score_query(query_terms, conn, idf_scores, doc_lengths, avg_doc_length)
+    ranked_docs = score_query(query_terms, conn, idf_scores, doc_lengths, avg_doc_length, top_n=top_n)
 
     # Return the ranked documents
     return ranked_docs
