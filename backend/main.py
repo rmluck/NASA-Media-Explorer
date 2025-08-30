@@ -16,23 +16,27 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime
 from .indexer.search import load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata, download_sqlite_index
 
-INDEX_DIR = os.path.join(os.path.dirname(__file__), "../data")
+DATA_DIR = os.environ.get("PERSISTENT_DISK_PATH", os.path.join(os.path.dirname(__file__), "../data"))
+INDEX_FILE = os.path.join(DATA_DIR, "inverted_index.sqlite")
+APOD_FILE = os.path.join(DATA_DIR, "apod.json")
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 
 
 # Load index and metadata once on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.idf_scores = load_idf_scores(os.path.join(INDEX_DIR, "idf_scores.json"))
-    app.state.doc_lengths = load_doc_lengths(os.path.join(INDEX_DIR, "doc_lengths.json"))
-    app.state.avg_doc_length = load_avg_doc_length(os.path.join(INDEX_DIR, "avg_doc_length.json"))
-    app.state.doc_lookup = load_doc_lookup(os.path.join(INDEX_DIR, "doc_lookup.json"))
+    app.state.idf_scores = load_idf_scores(os.path.join(DATA_DIR, "idf_scores.json"))
+    app.state.doc_lengths = load_doc_lengths(os.path.join(DATA_DIR, "doc_lengths.json"))
+    app.state.avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
+    app.state.doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
     app.state.metadata_cache = {}
 
-    sqlite_path = os.path.join(INDEX_DIR, "inverted_index.sqlite")
-    if not os.path.exists(sqlite_path):
+    if not os.path.exists(INDEX_FILE):
+        print("SQLite indeex not found, downloading...")
         download_sqlite_index()
-    app.state.sqlite_conn = sqlite3.connect(sqlite_path, check_same_thread=False)
+    else:
+        print("SQLite index found, using existing file.")
+    app.state.sqlite_conn = sqlite3.connect(INDEX_FILE, check_same_thread=False)
 
     try:
         yield
@@ -162,10 +166,9 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
 async def get_apod():
     nasa_timezone = pytz.timezone("US/Eastern")
     today_date = datetime.now(nasa_timezone).strftime("%Y-%m-%d")
-    apod_file = os.path.join(INDEX_DIR, "apod.json")
 
     try:
-        with open(apod_file, "r") as file:
+        with open(APOD_FILE, "r") as file:
             cached_apod = json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         cached_apod = {}
@@ -184,8 +187,10 @@ async def get_apod():
             )
         
     try:
-        with open(apod_file, "w") as file:
+        tmp_file = APOD_FILE + ".tmp"
+        with open(tmp_file, "w") as file:
             json.dump(apod_data, file, indent=2)
+        os.replace(tmp_file, APOD_FILE)
     except Exception as e:
         print("Failed to save APOD to JSON: ", e)
     
