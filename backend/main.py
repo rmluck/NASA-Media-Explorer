@@ -7,36 +7,38 @@ import os
 import httpx
 import json
 import pytz
+import sqlite3
 from urllib.parse import quote
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
-from .indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
+from .indexer.search import load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata, download_sqlite_index
 
 INDEX_DIR = os.path.join(os.path.dirname(__file__), "../data")
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
-
-index_path = os.path.join(INDEX_DIR, "inverted_index.pkl.gz")
-print("Using index path:", index_path)
 
 
 # Load index and metadata once on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.inverted_index = load_inverted_index(os.path.join(INDEX_DIR, "inverted_index.pkl.gz"))
     app.state.idf_scores = load_idf_scores(os.path.join(INDEX_DIR, "idf_scores.json"))
     app.state.doc_lengths = load_doc_lengths(os.path.join(INDEX_DIR, "doc_lengths.json"))
     app.state.avg_doc_length = load_avg_doc_length(os.path.join(INDEX_DIR, "avg_doc_length.json"))
     app.state.doc_lookup = load_doc_lookup(os.path.join(INDEX_DIR, "doc_lookup.json"))
     app.state.metadata_cache = {}
 
+    sqlite_path = os.path.join(INDEX_DIR, "inverted_index.sqlite")
+    if not os.path.exists(sqlite_path):
+        download_sqlite_index()
+    app.state.sqlite_conn = sqlite3.connect(sqlite_path)
+
     try:
         yield
     finally:
-        if hasattr(app.state, "inverted_index"):
-            app.state.inverted_index.close()
+        if hasattr(app.state, "sqlite_conn"):
+            app.state.sqlite_conn.close()
 
 # Create FastAPI app instance
 app = FastAPI(lifespan=lifespan)
@@ -51,7 +53,7 @@ def home(request: Request) -> HTMLResponse:
 @app.get("/search", response_class=HTMLResponse)
 def search_results(request: Request, query: str = Query(...), limit: int = 20, offset: int = 0) -> HTMLResponse:
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Bound the results by limit and offset
     total_results = len(results)
@@ -106,7 +108,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
 @app.get("/api/search")
 def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Fetch document metadata for the results
     filtered_results = []

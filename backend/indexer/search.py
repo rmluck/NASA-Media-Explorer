@@ -5,8 +5,8 @@ Searches for a query in the indexed corpus and returns the top results.
 
 import json
 import os
-import pickle
-import gzip
+import sqlite3
+import requests
 from collections import defaultdict
 from .indexer import preprocess_text
 
@@ -17,23 +17,45 @@ BM25_B = 0.75
 
 # Define the data directory and paths
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
+SQLITE_INDEX_PATH = os.path.join(DATA_DIR, "inverted_index.sqlite")
 
 
-def load_inverted_index(file_path: str) -> dict[str, dict[str, float]]:
-    """
-    Download the inverted index from a remote source.
+# def load_inverted_index(file_path: str) -> dict[str, dict[str, float]]:
+#     """
+#     Download the inverted index from a remote source.
 
-    Returns:
-        dict: The inverted index mapping terms to document IDs and their token frequencies.
-    """
+#     Returns:
+#         dict: The inverted index mapping terms to document IDs and their token frequencies.
+#     """
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Inverted index not found at {file_path}. Please ensure the index file is present.")
+#     if not os.path.exists(file_path):
+#         raise FileNotFoundError(f"Inverted index not found at {file_path}. Please ensure the index file is present.")
 
-    with gzip.open(file_path, "rb") as file:
-        inverted_index = pickle.load(file)
+#     with gzip.open(file_path, "rb") as file:
+#         inverted_index = pickle.load(file)
 
-    return inverted_index
+#     return inverted_index
+
+
+def download_sqlite_index():
+    url = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+
+    response = session.get(url, params={"id": "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp"}, stream=True)
+    token = None
+    for key, value in response.cookies.items():
+        if key.startswith("download_warning"):
+            token = value
+            break
+    
+    if token:
+        params = {"id": "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp", "confirm": token}
+        response = session.get(url, params=params, stream=True)
+
+    with open(SQLITE_INDEX_PATH, "wb") as file:
+        for chunk in response.iter_content(32768):
+            if chunk:
+                file.write(chunk)
 
 
 def load_idf_scores(file_path: str) -> dict[str, float]:
@@ -136,13 +158,29 @@ def load_doc_lookup(file_path: str) -> dict[str, dict]:
     return doc_lookup
 
 
-def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, float]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def get_postings(conn: sqlite3.Connection, token: str) -> dict[str, int]:
+    """
+    Get the postings list for a token from the SQLite inverted index.
+    
+    Parameters:
+        conn (sqlite3.Connection): The SQLite database connection.
+        token (str): The token to look up.
+    Returns:
+        dict: A dictionary mapping document IDs to their token frequencies.
+    """
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT doc_id, freq FROM inverted_index WHERE token = ?", (token,))
+    return {doc_id: freq for doc_id, freq in cursor.fetchall()}
+
+
+def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Score the query against the TF-IDF index and return the ranked documents.
 
     Parameters:
         query_tokens (list): The list of tokens in the query.
-        inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
+        conn (sqlite3.Connection): The SQLite database connection.
         idf_scores (dict): The IDF scores for each term.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         avg_doc_length (float): The average document length in the corpus.
@@ -153,9 +191,10 @@ def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, flo
 
     # Get the candidate documents from the inverted index
     candidate_docs = set()
+    token_postings = {}
     for token in query_tokens:
-        if token in inverted_index:
-            candidate_docs.update(inverted_index[token].keys())
+        token_postings[token] = get_postings(conn, token)
+        candidate_docs.update(token_postings[token].keys())
 
     # Score the candidate documents using cosine similarity
     scores = defaultdict(float)
@@ -163,10 +202,9 @@ def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, flo
         doc_len = doc_lengths[doc_id]
         score = 0
         for token in query_tokens:
-            if token in inverted_index and doc_id in inverted_index[token]:
-                freq = inverted_index[token][doc_id]
-                idf = idf_scores.get(token, 0)
-                score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
+            freq = token_postings[token].get(doc_id, 0)
+            idf = idf_scores.get(token, 0)
+            score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
         # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
         scores[doc_id] += score
 
@@ -224,13 +262,13 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
     return phrase_count
 
 
-def search_query(query: str, inverted_index: dict[str, dict[str, float]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Search for a query in the indexed corpus and return the top results.
     
     Parameters:
         query (str): The search query.
-        inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
+        conn (sqlite3.Connection): The SQLite database connection.
         idf_scores (dict): The IDF scores for each term.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         avg_doc_length (float): The average document length in the corpus.
@@ -242,8 +280,8 @@ def search_query(query: str, inverted_index: dict[str, dict[str, float]], idf_sc
     # Preprocess the query to create a list of tokens
     query_terms = preprocess_text(query)
 
-    # Calculate the document scores for the query against the TF-IDF index
-    ranked_docs = score_query(query_terms, inverted_index, idf_scores, doc_lengths, avg_doc_length)
+    # Calculate the document scores for the query
+    ranked_docs = score_query(query_terms, conn, idf_scores, doc_lengths, avg_doc_length)
 
     # Return the ranked documents
     return ranked_docs
@@ -264,7 +302,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
         
     # Check if the document ID exists in the lookup
     lookup_info = doc_lookup.get(doc_id, None)
-    if lookup_info is None:
+    if not lookup_info:
         return {"error": "Document not found"}
     year, index = lookup_info["year"], lookup_info["index"]
 
@@ -281,19 +319,24 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
 
 if __name__ == "__main__":
     # Load the index data
-    index_dir = "data"
-    inverted_index = load_inverted_index(os.path.join(index_dir, "inverted_index.pkl.gz"))
-    idf_scores = load_idf_scores(os.path.join(index_dir, "idf_scores.json"))
+    idf_scores = load_idf_scores(os.path.join(DATA_DIR, "idf_scores.json"))
     # tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
-    doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))
-    avg_doc_length = load_avg_doc_length(os.path.join(index_dir, "avg_doc_length.json"))
+    doc_lengths = load_doc_lengths(os.path.join(DATA_DIR, "doc_lengths.json"))
+    avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
+
+    # Connect to the SQLite database
+    if not os.path.exists(SQLITE_INDEX_PATH):
+        print("Downloading SQLite inverted index...")
+        download_sqlite_index()
+        print("Download complete.")
+    conn = sqlite3.connect(SQLITE_INDEX_PATH)
 
     # Run a sample query
     query = "Apollo 11"
-    ranked_docs = search_query(query, inverted_index, idf_scores,  doc_lengths, avg_doc_length)
+    ranked_docs = search_query(query, conn, idf_scores, doc_lengths, avg_doc_length)
 
     # Load the document lookup information from a JSON file
-    doc_lookup = load_doc_lookup(os.path.join(index_dir, "doc_lookup.json"))
+    doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
 
     # Print the top 20 results with their titles and scores
     metadata_cache = {}
@@ -303,3 +346,5 @@ if __name__ == "__main__":
         title = doc_metadata.get("title", "Unknown Title")
 
         print(f"Title: {title}, Score: {score:.4f}")
+
+    conn.close()

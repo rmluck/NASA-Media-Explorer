@@ -20,3 +20,4 @@ data/nasa_full_corpus
 data/inverted_index.json
 data/inverted_index.pkl
 data/inverted_index_shelve
+data/inverted_index.sqlite
