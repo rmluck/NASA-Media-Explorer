@@ -193,7 +193,7 @@ def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: d
         candidate_docs.update(token_postings[token].keys())
 
     # Score the candidate documents using cosine similarity
-    scores = {}
+    scores = defaultdict(float)
     for doc_id in candidate_docs:
         doc_len = doc_lengths[doc_id]
         score = 0
@@ -201,7 +201,7 @@ def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: d
             freq = token_postings[token].get(doc_id, 0)
             idf = idf_scores.get(token, 0)
             score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
-            # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
+        # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
         scores[doc_id] += score
 
     # Sort the documents by their scores in descending order
