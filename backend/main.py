@@ -52,7 +52,7 @@ def home(request: Request) -> HTMLResponse:
 @app.get("/search", response_class=HTMLResponse)
 def search_results(request: Request, query: str = Query(...), limit: int = 20, offset: int = 0) -> HTMLResponse:
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length, top_n=limit + offset)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Bound the results by limit and offset
     total_results = len(results)
@@ -107,7 +107,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
 @app.get("/api/search")
 def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length, top_n=limit + offset)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Fetch document metadata for the results
     filtered_results = []
