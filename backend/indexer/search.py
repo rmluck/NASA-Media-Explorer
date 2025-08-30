@@ -224,13 +224,13 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
     return phrase_count
 
 
-def search_query(query: str, inverted_index: shelve.DbfilenameShelf, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def search_query(query: str, inverted_index: dict[str, dict[str, float]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Search for a query in the indexed corpus and return the top results.
     
     Parameters:
         query (str): The search query.
-        inverted_index (shelve.DbfilenameShelf): The inverted index mapping terms to document IDs and their token frequencies.
+        inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
         idf_scores (dict): The IDF scores for each term.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         avg_doc_length (float): The average document length in the corpus.
