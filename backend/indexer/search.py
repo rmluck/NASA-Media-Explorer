@@ -203,7 +203,7 @@ def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: d
         idf = idf_scores.get(token, 0)
         for doc_id, freq in postings.items():
             doc_len = doc_lengths.get(doc_id, avg_doc_length)
-            score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
+            score = idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
             # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
             scores[doc_id] = scores.get(doc_id, 0) + score
 
