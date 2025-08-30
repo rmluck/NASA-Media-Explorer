@@ -5,6 +5,7 @@ Searches for a query in the indexed corpus and returns the top results.
 
 import json
 import os
+import gdown
 import sqlite3
 import requests
 from collections import defaultdict
@@ -38,24 +39,10 @@ SQLITE_INDEX_PATH = os.path.join(DATA_DIR, "inverted_index.sqlite")
 
 
 def download_sqlite_index():
-    url = "https://drive.google.com/uc?export=download"
-    session = requests.Session()
+    file_id = "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp"
+    url = f"https://drive.google.com/uc?id={file_id}"
 
-    response = session.get(url, params={"id": "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp"}, stream=True)
-    token = None
-    for key, value in response.cookies.items():
-        if key.startswith("download_warning"):
-            token = value
-            break
-    
-    if token:
-        params = {"id": "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp", "confirm": token}
-        response = session.get(url, params=params, stream=True)
-
-    with open(SQLITE_INDEX_PATH, "wb") as file:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                file.write(chunk)
+    gdown.download(url, SQLITE_INDEX_PATH, quiet=False)
 
 
 def load_idf_scores(file_path: str) -> dict[str, float]:
@@ -331,20 +318,20 @@ if __name__ == "__main__":
         print("Download complete.")
     conn = sqlite3.connect(SQLITE_INDEX_PATH)
 
-    # Run a sample query
-    query = "Apollo 11"
-    ranked_docs = search_query(query, conn, idf_scores, doc_lengths, avg_doc_length)
+    # # Run a sample query
+    # query = "Apollo 11"
+    # ranked_docs = search_query(query, conn, idf_scores, doc_lengths, avg_doc_length)
 
-    # Load the document lookup information from a JSON file
-    doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
+    # # Load the document lookup information from a JSON file
+    # doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
 
-    # Print the top 20 results with their titles and scores
-    metadata_cache = {}
-    for doc_id, score in ranked_docs[:20]:
-        # Get metadata for the document
-        doc_metadata = get_doc_metadata(doc_id, doc_lookup, metadata_cache)
-        title = doc_metadata.get("title", "Unknown Title")
+    # # Print the top 20 results with their titles and scores
+    # metadata_cache = {}
+    # for doc_id, score in ranked_docs[:20]:
+    #     # Get metadata for the document
+    #     doc_metadata = get_doc_metadata(doc_id, doc_lookup, metadata_cache)
+    #     title = doc_metadata.get("title", "Unknown Title")
 
-        print(f"Title: {title}, Score: {score:.4f}")
+    #     print(f"Title: {title}, Score: {score:.4f}")
 
     conn.close()
