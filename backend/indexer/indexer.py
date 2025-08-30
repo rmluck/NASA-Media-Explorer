@@ -118,7 +118,6 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
 
             # Process each field separately with weighting
             for field, weight in FIELD_WEIGHTS.items():
-                token_position = 0
                 if field in doc:
                     # Preprocess the text field to create a tokenized representation of the document
                     text = doc[field]
@@ -130,10 +129,8 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
                         if token not in inverted_index:
                             inverted_index[token] = {}
                         if doc_id not in inverted_index[token]:
-                            inverted_index[token][doc_id] = {"freq": 0, "positions": []}
-                        inverted_index[token][doc_id]["freq"] += weight
-                        inverted_index[token][doc_id]["positions"].append(token_position)
-                        token_position += 1
+                            inverted_index[token][doc_id] = 0
+                        inverted_index[token][doc_id] += weight
 
                     # Update the document length
                     doc_length += len(tokens)
