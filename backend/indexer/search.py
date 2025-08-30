@@ -5,9 +5,8 @@ Searches for a query in the indexed corpus and returns the top results.
 
 import json
 import os
-import gdown
+# import gdown
 import sqlite3
-import requests
 from collections import defaultdict
 from .indexer import preprocess_text
 
@@ -38,11 +37,11 @@ SQLITE_INDEX_PATH = os.path.join(DATA_DIR, "inverted_index.sqlite")
 #     return inverted_index
 
 
-def download_sqlite_index():
-    file_id = "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp"
-    url = f"https://drive.google.com/uc?id={file_id}"
+# def download_sqlite_index():
+#     file_id = "1DTtPFdYiNzlHiQDEV30gzQG9ZANoICPp"
+#     url = f"https://drive.google.com/uc?id={file_id}"
 
-    gdown.download(url, SQLITE_INDEX_PATH, quiet=False)
+#     gdown.download(url, SQLITE_INDEX_PATH, quiet=False)
 
 
 def load_idf_scores(file_path: str) -> dict[str, float]:
@@ -312,10 +311,10 @@ if __name__ == "__main__":
     avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
 
     # Connect to the SQLite database
-    if not os.path.exists(SQLITE_INDEX_PATH):
-        print("Downloading SQLite inverted index...")
-        download_sqlite_index()
-        print("Download complete.")
+    # if not os.path.exists(SQLITE_INDEX_PATH):
+    #     print("Downloading SQLite inverted index...")
+    #     download_sqlite_index()
+    #     print("Download complete.")
     conn = sqlite3.connect(SQLITE_INDEX_PATH)
 
     # # Run a sample query
