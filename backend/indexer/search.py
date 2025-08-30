@@ -5,6 +5,8 @@ Searches for a query in the indexed corpus and returns the top results.
 
 import json
 import os
+import pickle
+import gdown
 from collections import defaultdict
 from .indexer import preprocess_text
 
@@ -16,21 +18,26 @@ BM25_B = 0.75
 # Define the data directory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 
+# Define the URL for downloading large index files
+INVERTED_INDEX_URL = "https://drive.google.com/uc?export=download&id=1H704CQ5xR9JBiGbRj-aGXGw1EGQqJ1TO"
 
-def load_inverted_index(file_path: str) -> dict[str, dict[str, list[int]]]:
+# Define the path to the local inverted index file
+INVERTED_INDEX_PATH = "/tmp/inverted_index.pkl"
+
+
+def download_inverted_index() -> dict[str, dict[str, list[int]]]:
     """
-    Load the inverted index from a JSON file.
-
-    Parameters:
-        file_path (str): The path to the JSON file containing the inverted index.
-
-    Returns:
-        dict: The inverted index mapping terms to document IDs and their token frequencies.
+    Download the inverted index from a remote source.
     """
 
-    # Loads the inverted index from a JSON file
-    with open(file_path, "r") as file:
-        inverted_index = json.load(file)
+    if not os.path.exists(INVERTED_INDEX_PATH):
+        print("Downloading inverted index from Google Drive...")
+        gdown.download(INVERTED_INDEX_URL, INVERTED_INDEX_PATH, quiet=False)
+        print("Download complete.")
+
+    # Load the downloaded inverted index from the pickle file
+    with open(INVERTED_INDEX_PATH, "rb") as file:
+        inverted_index = pickle.load(file)
 
     # Return the loaded inverted index
     return inverted_index
@@ -282,7 +289,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
 if __name__ == "__main__":
     # Load the index data
     index_dir = "data"
-    inverted_index = load_inverted_index(os.path.join(index_dir, "inverted_index.json"))
+    inverted_index = download_inverted_index(os.path.join(index_dir, "inverted_index.json"))
     idf_scores = load_idf_scores(os.path.join(index_dir, "idf_scores.json"))
     # tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
     doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))

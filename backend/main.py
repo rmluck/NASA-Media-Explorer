@@ -13,7 +13,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
-from indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
+from indexer.search import download_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
 
 INDEX_DIR = "../data"
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
@@ -22,7 +22,7 @@ NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 # Load index and metadata once on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.inverted_index = load_inverted_index(os.path.join(INDEX_DIR, "inverted_index.json"))
+    app.state.inverted_index = download_inverted_index()
     app.state.idf_scores = load_idf_scores(os.path.join(INDEX_DIR, "idf_scores.json"))
     app.state.doc_lengths = load_doc_lengths(os.path.join(INDEX_DIR, "doc_lengths.json"))
     app.state.avg_doc_length = load_avg_doc_length(os.path.join(INDEX_DIR, "avg_doc_length.json"))
