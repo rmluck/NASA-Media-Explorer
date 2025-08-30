@@ -15,8 +15,11 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime
 from .indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
 
-INDEX_DIR = "../data"
+INDEX_DIR = os.path.join(os.path.dirname(__file__), "../data")
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
+
+index_path = os.path.join(INDEX_DIR, "inverted_index.pkl.gz")
+print("Using index path:", index_path)
 
 
 # Load index and metadata once on startup
