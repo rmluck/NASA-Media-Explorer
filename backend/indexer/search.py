@@ -283,14 +283,13 @@ def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, flo
     return ranked_docs
 
 
-def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dict:
+def get_doc_metadata(doc_id: str, doc_lookup: dict) -> dict:
     """
     Get the metadata for a document by its ID.
 
     Parameters:
         doc_id (str): The document ID.
         doc_lookup (dict): The document lookup information mapping document IDs to their metadata.
-        metadata_cache (dict): A cache to store previously retrieved metadata.
 
     Returns:
         dict: The metadata for the document.
@@ -303,14 +302,14 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
     year, index = lookup_info["year"], lookup_info["index"]
 
     # Check if the metadata is already cached
-    if year not in metadata_cache:
+    # if year not in metadata_cache:
         # Load the metadata for the document
-        doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
-        with open(doc_metadata_file_path, "r") as file:
-            metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
-
-    # Return the metadata for the document
-    return metadata_cache[year][doc_lookup[doc_id]["index"]]
+    doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
+    with open(doc_metadata_file_path, "r") as file:
+        # metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
+        for i, line in enumerate(file):
+            if i == index:
+                return json.loads(line)
 
 
 if __name__ == "__main__":

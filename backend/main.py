@@ -29,7 +29,6 @@ async def lifespan(app: FastAPI):
     app.state.doc_lengths = load_doc_lengths(os.path.join(DATA_DIR, "doc_lengths.json"))
     app.state.avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
     app.state.doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
-    app.state.metadata_cache = {}
 
     app.state.sqlite_conn = sqlite3.connect(INDEX_FILE, check_same_thread=False)
 
@@ -61,8 +60,8 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
     # Fetch document metadata for the results
     top_results = []
     for doc_id, score in paged_results:
-        metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
-        
+        metadata = get_doc_metadata(doc_id, app.state.doc_lookup)
+
         raw_asset = metadata.get("asset", "").replace("http://", "https://")
         raw_thumbnail = metadata.get("thumbnail", "").replace("http://", "https://")
         asset = quote(raw_asset, safe=":/~")
@@ -112,7 +111,7 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
     # Fetch document metadata for the results
     filtered_results = []
     for doc_id, score in results:
-        metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
+        metadata = get_doc_metadata(doc_id, app.state.doc_lookup)
 
         year = int(metadata.get("date_created", "0")[:4])
         if year < start_year:
