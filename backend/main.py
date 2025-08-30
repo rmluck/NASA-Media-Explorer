@@ -29,7 +29,11 @@ async def lifespan(app: FastAPI):
     app.state.doc_lookup = load_doc_lookup(os.path.join(INDEX_DIR, "doc_lookup.json"))
     app.state.metadata_cache = {}
 
-    yield
+    try:
+        yield
+    finally:
+        if hasattr(app.state, "inverted_index"):
+            app.state.inverted_index.close()
 
 # Create FastAPI app instance
 app = FastAPI(lifespan=lifespan)

@@ -7,8 +7,10 @@ import json
 import os
 import pickle
 import gdown
+import shelve
 from collections import defaultdict
 from .indexer import preprocess_text
+from .convert_index_to_shelve import convert_index_to_shelve_file
 
 # Define weights and parameters for scoring
 PHRASE_WEIGHT = 2.0
@@ -21,26 +23,28 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 # Define the URL for downloading large index files
 INVERTED_INDEX_URL = "https://drive.google.com/uc?export=download&id=1H704CQ5xR9JBiGbRj-aGXGw1EGQqJ1TO"
 
-# Define the path to the local inverted index file
+# Define the path to the local inverted index file and shelve
 INVERTED_INDEX_PATH = "/tmp/inverted_index.pkl"
+SHELVE_PATH = "/tmp/inverted_index_shelve"
 
 
-def download_inverted_index() -> dict[str, dict[str, list[int]]]:
+def download_inverted_index() -> shelve.DbfilenameShelf:
     """
     Download the inverted index from a remote source.
+
+    Returns:
+        shelve.DbfilenameShelf: A disk-backed shelve object containing the inverted index.
     """
 
-    if not os.path.exists(INVERTED_INDEX_PATH):
+    if not os.path.exists(SHELVE_PATH + ".db"):
         print("Downloading inverted index from Google Drive...")
         gdown.download(INVERTED_INDEX_URL, INVERTED_INDEX_PATH, quiet=False)
-        print("Download complete.")
-
-    # Load the downloaded inverted index from the pickle file
-    with open(INVERTED_INDEX_PATH, "rb") as file:
-        inverted_index = pickle.load(file)
-
-    # Return the loaded inverted index
-    return inverted_index
+        print("Converting to disk-backed shelve...")
+        convert_index_to_shelve_file(INVERTED_INDEX_PATH, SHELVE_PATH)
+        print("Shelve ready.")
+    
+    db = shelve.open(SHELVE_PATH, flag="r")
+    return db
 
 
 def load_idf_scores(file_path: str) -> dict[str, float]:
@@ -143,13 +147,13 @@ def load_doc_lookup(file_path: str) -> dict[str, dict]:
     return doc_lookup
 
 
-def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, list[int]]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def score_query(query_tokens: list[str], inverted_index: shelve.DbfilenameShelf, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Score the query against the TF-IDF index and return the ranked documents.
 
     Parameters:
         query_tokens (list): The list of tokens in the query.
-        inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
+        inverted_index (shelve.DbfilenameShelf): The inverted index mapping terms to document IDs and their token frequencies.
         idf_scores (dict): The IDF scores for each term.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         avg_doc_length (float): The average document length in the corpus.
@@ -231,13 +235,13 @@ def phrase_score(doc_id: str, query_tokens: list[str], inverted_index: dict[str,
     return phrase_count
 
 
-def search_query(query: str, inverted_index: dict[str, dict[str, list[int]]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def search_query(query: str, inverted_index: shelve.DbfilenameShelf, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
     Search for a query in the indexed corpus and return the top results.
     
     Parameters:
         query (str): The search query.
-        inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
+        inverted_index (shelve.DbfilenameShelf): The inverted index mapping terms to document IDs and their token frequencies.
         idf_scores (dict): The IDF scores for each term.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         avg_doc_length (float): The average document length in the corpus.
@@ -289,7 +293,7 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
 if __name__ == "__main__":
     # Load the index data
     index_dir = "data"
-    inverted_index = download_inverted_index(os.path.join(index_dir, "inverted_index.json"))
+    inverted_index = download_inverted_index()
     idf_scores = load_idf_scores(os.path.join(index_dir, "idf_scores.json"))
     # tf_idf_index, doc_norms = load_tf_idf_index(os.path.join(corpus_dir, "tf_idf_index.json"))
     doc_lengths = load_doc_lengths(os.path.join(index_dir, "doc_lengths.json"))

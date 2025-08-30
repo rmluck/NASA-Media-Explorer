@@ -17,6 +17,5 @@ def save_inverted_index():
     with open(os.path.join("data", "inverted_index.pkl"), "wb") as file:
         pickle.dump(inverted_index, file)
 
-
 if __name__ == "__main__":
     save_inverted_index()
