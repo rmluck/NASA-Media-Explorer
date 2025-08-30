@@ -14,7 +14,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
-from .indexer.search import load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
+from .indexer.search import load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata, LRUCache
 
 DATA_DIR = os.environ.get("PERSISTENT_DISK_PATH", os.path.join(os.path.dirname(__file__), "../data"))
 INDEX_FILE = os.path.join(DATA_DIR, "inverted_index.sqlite")
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     app.state.doc_lengths = load_doc_lengths(os.path.join(DATA_DIR, "doc_lengths.json"))
     app.state.avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
     app.state.doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
-    app.state.metadata_cache = {}
+    app.state.metadata_cache = LRUCache(max_size=50)
 
     app.state.sqlite_conn = sqlite3.connect(INDEX_FILE, check_same_thread=False)
 
@@ -52,7 +52,7 @@ def home(request: Request) -> HTMLResponse:
 @app.get("/search", response_class=HTMLResponse)
 def search_results(request: Request, query: str = Query(...), limit: int = 20, offset: int = 0) -> HTMLResponse:
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length, top_n=limit + offset)
 
     # Bound the results by limit and offset
     total_results = len(results)
@@ -107,7 +107,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
 @app.get("/api/search")
 def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length, top_n=limit + offset)
 
     # Fetch document metadata for the results
     filtered_results = []

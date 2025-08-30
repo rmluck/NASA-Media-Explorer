@@ -7,7 +7,8 @@ import json
 import os
 # import gdown
 import sqlite3
-from collections import defaultdict
+import heapq
+from collections import defaultdict, OrderedDict
 from .indexer import preprocess_text
 
 # Define weights and parameters for scoring
@@ -18,6 +19,16 @@ BM25_B = 0.75
 # Define the data directory and paths
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 SQLITE_INDEX_PATH = os.path.join(DATA_DIR, "inverted_index.sqlite")
+
+class LRUCache(OrderedDict):
+    def __init__(self, max_size=100):
+        super().__init__()
+        self.max_size = max_size
+
+    def __setitem__(self, key, value):
+        if len(self) >= self.max_size:
+            self.popitem(last=False)
+        super().__setitem__(key, value)
 
 
 # def load_inverted_index(file_path: str) -> dict[str, dict[str, float]]:
@@ -160,7 +171,7 @@ def get_postings(conn: sqlite3.Connection, token: str) -> dict[str, int]:
     return {doc_id: freq for doc_id, freq in cursor.fetchall()}
 
 
-def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
+def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float, top_n: int = 200) -> list[tuple[str, float]]:
     """
     Score the query against the TF-IDF index and return the ranked documents.
 
@@ -176,26 +187,29 @@ def score_query(query_tokens: list[str], conn: sqlite3.Connection, idf_scores: d
     """
 
     # Get the candidate documents from the inverted index
-    candidate_docs = set()
-    token_postings = {}
-    for token in query_tokens:
-        token_postings[token] = get_postings(conn, token)
-        candidate_docs.update(token_postings[token].keys())
+    # candidate_docs = set()
+    # token_postings = {}
+    # for token in query_tokens:
+    #     token_postings[token] = get_postings(conn, token)
+    #     candidate_docs.update(token_postings[token].keys())
 
     # Score the candidate documents using cosine similarity
-    scores = defaultdict(float)
-    for doc_id in candidate_docs:
-        doc_len = doc_lengths[doc_id]
-        score = 0
-        for token in query_tokens:
-            freq = token_postings[token].get(doc_id, 0)
-            idf = idf_scores.get(token, 0)
+    scores = {}
+    # for doc_id in candidate_docs:
+    #     doc_len = doc_lengths[doc_id]
+    #     score = 0
+    for token in query_tokens:
+        postings = get_postings(conn, token)
+        idf = idf_scores.get(token, 0)
+        for doc_id, freq in postings.items():
+            doc_len = doc_lengths.get(doc_id, avg_doc_length)
             score += idf * ((freq * (BM25_K + 1)) / (freq + BM25_K * (1 - BM25_B + BM25_B * (doc_len / avg_doc_length))))
-        # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
-        scores[doc_id] += score
+            # score += PHRASE_WEIGHT * phrase_score(doc_id, query_tokens, inverted_index)
+            scores[doc_id] = scores.get(doc_id, 0) + score
 
     # Sort the documents by their scores in descending order
-    ranked_docs = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    # ranked_docs = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    ranked_docs = heapq.nlargest(top_n, scores.items(), key=lambda x: x[1])
 
     # Return the ranked documents
     return ranked_docs
@@ -273,14 +287,14 @@ def search_query(query: str, conn: sqlite3.Connection, idf_scores: dict[str, flo
     return ranked_docs
 
 
-def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dict:
+def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: LRUCache) -> dict:
     """
     Get the metadata for a document by its ID.
 
     Parameters:
         doc_id (str): The document ID.
         doc_lookup (dict): The document lookup information mapping document IDs to their metadata.
-        metadata_cache (dict): A cache to store previously retrieved metadata.
+        metadata_cache (LRUCache): A cache to store previously retrieved metadata.
 
     Returns:
         dict: The metadata for the document.
@@ -295,12 +309,17 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict) -> dic
     # Check if the metadata is already cached
     if year not in metadata_cache:
         # Load the metadata for the document
+        metadata_cache[year] = {}
         doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
         with open(doc_metadata_file_path, "r") as file:
-            metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
-    
+            for i, line in enumerate(file):
+                if line.strip():
+                    if i == index:
+                        metadata_cache[year][doc_id] = json.loads(line)
+                        break
+
     # Return the metadata for the document
-    return metadata_cache[year][doc_lookup[doc_id]["index"]]
+    return metadata_cache[year].get(doc_id, {"error": "Metadata not found"})
 
 
 if __name__ == "__main__":
