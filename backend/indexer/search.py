@@ -270,13 +270,22 @@ def get_doc_metadata(doc_id: str, doc_lookup: dict, metadata_cache: dict[str, li
 
     # Check if the metadata is already cached
     if year not in metadata_cache:
-        # Load the metadata for the document
-        doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
-        with open(doc_metadata_file_path, "r") as file:
-            metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
+        metadata_cache[year] = {}
+    if index in metadata_cache[year]:
+        return metadata_cache[year][index]
+    
+    # Load the metadata for the document
+    doc_metadata_file_path = os.path.join(DATA_DIR, "nasa_full_corpus", f"nasa_data_{year}.json")
+    with open(doc_metadata_file_path, "r") as file:
+        for i, line in enumerate(file):
+            if line.strip():
+                if i == index:
+                    metadata_cache[year][index] = json.loads(line)
+                    return metadata_cache[year][index]
+        # metadata_cache[year] = [json.loads(line) for line in file if line.strip()]
     
     # Return the metadata for the document
-    return metadata_cache[year][doc_lookup[doc_id]["index"]]
+    # return metadata_cache[year][doc_lookup[doc_id]["index"]]
 
 
 if __name__ == "__main__":

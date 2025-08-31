@@ -694,7 +694,7 @@
                 e.preventDefault();
                 const newQuery = searchInput.value.trim();
                 if (newQuery) {
-                    window.location.href = `/search?query=${encodeURIComponent(newQuery)}`;
+                    window.location.href = `/search?query=${encodeURIComponent(newQuery)}&new_query=true`;
                 }
             });
 

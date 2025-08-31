@@ -98,7 +98,10 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
     )
 
 @app.get("/api/search")
-def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
+def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None, new_query: bool = False):
+    if new_query:
+        app.state.metadata_cache = {}
+
     # Run the search query using the loaded index and metadata
     results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
