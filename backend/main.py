@@ -7,36 +7,30 @@ import os
 import httpx
 import json
 import pytz
-import sqlite3
 from urllib.parse import quote
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
-from .indexer.search import load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
+from .indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
 
-DATA_DIR = os.environ.get("PERSISTENT_DISK_PATH", os.path.join(os.path.dirname(__file__), "../data"))
-INDEX_FILE = os.path.join(DATA_DIR, "inverted_index.sqlite")
-APOD_FILE = os.path.join(DATA_DIR, "apod.json")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "../data")
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 
 
 # Load index and metadata once on startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.inverted_index = load_inverted_index(os.path.join(DATA_DIR, "inverted_index.pkl.gz"))
     app.state.idf_scores = load_idf_scores(os.path.join(DATA_DIR, "idf_scores.json"))
     app.state.doc_lengths = load_doc_lengths(os.path.join(DATA_DIR, "doc_lengths.json"))
     app.state.avg_doc_length = load_avg_doc_length(os.path.join(DATA_DIR, "avg_doc_length.json"))
     app.state.doc_lookup = load_doc_lookup(os.path.join(DATA_DIR, "doc_lookup.json"))
 
-    app.state.sqlite_conn = sqlite3.connect(INDEX_FILE, check_same_thread=False)
+    app.state.metadata_cache = {}
 
-    try:
-        yield
-    finally:
-        if hasattr(app.state, "sqlite_conn"):
-            app.state.sqlite_conn.close()
+    yield
 
 # Create FastAPI app instance
 app = FastAPI(lifespan=lifespan)
@@ -51,7 +45,7 @@ def home(request: Request) -> HTMLResponse:
 @app.get("/search", response_class=HTMLResponse)
 def search_results(request: Request, query: str = Query(...), limit: int = 20, offset: int = 0) -> HTMLResponse:
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Bound the results by limit and offset
     total_results = len(results)
@@ -60,7 +54,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
     # Fetch document metadata for the results
     top_results = []
     for doc_id, score in paged_results:
-        metadata = get_doc_metadata(doc_id, app.state.doc_lookup)
+        metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
 
         raw_asset = metadata.get("asset", "").replace("http://", "https://")
         raw_thumbnail = metadata.get("thumbnail", "").replace("http://", "https://")
@@ -106,12 +100,12 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
 @app.get("/api/search")
 def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None):
     # Run the search query using the loaded index and metadata
-    results = search_query(query, app.state.sqlite_conn, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
+    results = search_query(query, app.state.inverted_index, app.state.idf_scores, app.state.doc_lengths, app.state.avg_doc_length)
 
     # Fetch document metadata for the results
     filtered_results = []
     for doc_id, score in results:
-        metadata = get_doc_metadata(doc_id, app.state.doc_lookup)
+        metadata = get_doc_metadata(doc_id, app.state.doc_lookup, app.state.metadata_cache)
 
         year = int(metadata.get("date_created", "0")[:4])
         if year < start_year:
@@ -158,11 +152,12 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
 
 @app.get("/apod")
 async def get_apod():
+    apod_file = os.path.join(DATA_DIR, "apod.json")
     nasa_timezone = pytz.timezone("US/Eastern")
     today_date = datetime.now(nasa_timezone).strftime("%Y-%m-%d")
 
     try:
-        with open(APOD_FILE, "r") as file:
+        with open(apod_file, "r") as file:
             cached_apod = json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         cached_apod = {}
@@ -181,10 +176,10 @@ async def get_apod():
             )
         
     try:
-        tmp_file = APOD_FILE + ".tmp"
+        tmp_file = apod_file + ".tmp"
         with open(tmp_file, "w") as file:
             json.dump(apod_data, file, indent=2)
-        os.replace(tmp_file, APOD_FILE)
+        os.replace(tmp_file, apod_file)
     except Exception as e:
         print("Failed to save APOD to JSON: ", e)
     

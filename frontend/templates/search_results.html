@@ -729,6 +729,14 @@
                 fetchResults({ reset: true });
             });
 
+            function escapeAttr(str) {
+                return str.replace(/&/g, "&amp;")
+                          .replace(/"/g, "&quot;")
+                          .replace(/'/g, "&#39;")
+                          .replace(/</g, "&lt;")
+                          .replace(/>/g, "&gt;");
+            }
+
             async function fetchResults({ reset = false } = {}) {
                 if (reset) {
                     offset = 0;
@@ -758,21 +766,21 @@
 
                     col.innerHTML = `
                     <div class="result_card ${item.media_type}"
-                         data-title="${item.title}"
-                         data-description="${item.description}"
-                         data-media-type="${item.media_type}"
-                         data-date="${item.date_created || "N/A"}"
-                         data-location="${item.location || "N/A"}"
-                         data-center="${item.center || "N/A"}"
-                         data-photographer="${item.photographer || "N/A"}"
-                         data-keywords="${item.keywords.join(', ') || "N/A"}"
-                        data-asset="${item.asset}"
-                         data-thumbnail="${item.thumbnail}"
-                         data-doc-id="${item.doc_id}">
-                        <img src="${item.thumbnail}" alt="${item.title}" class="card_thumbnail">
-                        ${item.media_type === "video" ? '<video class="video_preview" muted preload="metadata"><source src="' + item.asset + '" type="video/mp4"></video>' : ''}
-                        <span class="media_badge ${item.media_type}">${item.media_type}</span>
-                        <div class="overlay">${item.title}</div>
+                         data-title="${escapeAttr(item.title)}"
+                         data-description="${escapeAttr(item.description)}"
+                         data-media-type="${escapeAttr(item.media_type)}"
+                         data-date="${escapeAttr(item.date_created || "N/A")}"
+                         data-location="${escapeAttr(item.location || "N/A")}"
+                         data-center="${escapeAttr(item.center || "N/A")}"
+                         data-photographer="${escapeAttr(item.photographer || "N/A")}"
+                         data-keywords="${escapeAttr(item.keywords.join(', ') || "N/A")}"
+                         data-asset="${escapeAttr(item.asset)}"
+                         data-thumbnail="${escapeAttr(item.thumbnail)}"
+                         data-doc-id="${escapeAttr(item.doc_id)}">
+                        <img src="${escapeAttr(item.thumbnail)}" alt="${escapeAttr(item.title)}" class="card_thumbnail">
+                        ${item.media_type === "video" ? '<video class="video_preview" muted preload="metadata"><source src="' + escapeAttr(item.asset) + '" type="video/mp4"></video>' : ''}
+                        <span class="media_badge ${escapeAttr(item.media_type)}">${escapeAttr(item.media_type)}</span>
+                        <div class="overlay">${escapeAttr(item.title)}</div>
                     </div>
                     `;
                     resultsGrid.appendChild(col);
