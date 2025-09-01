@@ -1,5 +1,5 @@
 """
-Saves inverted index.
+Saves inverted index as a pickle file.
 """
 
 import json
@@ -17,6 +17,7 @@ def save_inverted_index():
 
     with gzip.open(os.path.join("data", "inverted_index.pkl.gz"), "wb") as file:
         pickle.dump(inverted_index, file)
+
 
 if __name__ == "__main__":
     save_inverted_index()

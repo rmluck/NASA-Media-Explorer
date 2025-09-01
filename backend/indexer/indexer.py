@@ -29,6 +29,9 @@ FIELD_WEIGHTS = {
     "location": 0.5
 }
 
+# Define the corpus directory
+CORPUS_DIR = os.path.join(os.path.dirname(__file__), "../../data/nasa_full_corpus")
+
 # Load the spaCy model for text processing
 nlp = spacy.load("en_core_web_sm")
 
@@ -68,13 +71,9 @@ def preprocess_text(text: str) -> list[str]:
     return preserved_tokens + tokens
         
 
-def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> tuple[dict[str, dict[str, int]], dict[str, int]]:
+def build_inverted_index() -> tuple[dict[str, dict[str, int]], dict[str, int]]:
     """
     Build an inverted index from the provided data.
-
-    Parameters:
-        corpus_directory (str): The directory containing the JSON files with the data.
-        save_to_file (bool): Whether to save the inverted index to a JSON file.
 
     Returns:
         dict: The inverted index mapping terms to document IDs.
@@ -89,9 +88,9 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
     # Iterate through each JSON file in the corpus directory
     for year in range(1920, 2025):
         filename = f"nasa_data_{year}.json"
-        file_path = os.path.join(corpus_directory, filename)
+        file_path = os.path.join(CORPUS_DIR, filename)
         if not os.path.exists(file_path):
-            print(f"File {filename} does not exist in the directory {corpus_directory}. Skipping...")
+            print(f"File {filename} does not exist in the directory {CORPUS_DIR}. Skipping...")
             continue
 
         print(f"Processing file: {filename}...")
@@ -145,40 +144,38 @@ def build_inverted_index(corpus_directory: str, save_to_file: bool = False) -> t
     # Calculate and store the average document length
     avg_doc_length = sum(doc_lengths.values()) / len(doc_lengths)        
 
-    # Optionally save the inverted index, document lookup information, document lengths, and average document length to JSON files
-    if save_to_file:
-        file_path = os.path.join("data", "inverted_index.json")
-        with open(file_path, "w") as file:
-            json.dump(inverted_index, file, indent=2)
-        print(f"Inverted index saved to {file_path}.")
+    # Save the inverted index, document lookup information, document lengths, and average document length to JSON files
+    file_path = os.path.join("data", "inverted_index.json")
+    with open(file_path, "w") as file:
+        json.dump(inverted_index, file, indent=2)
+    print(f"Inverted index saved to {file_path}.")
 
-        file_path = os.path.join("data", "doc_lookup.json")
-        with open(file_path, "w") as file:
-            json.dump(doc_lookup, file, indent=2)
-        print(f"Document lookup information saved to {file_path}.")
+    file_path = os.path.join("data", "doc_lookup.json")
+    with open(file_path, "w") as file:
+        json.dump(doc_lookup, file, indent=2)
+    print(f"Document lookup information saved to {file_path}.")
 
-        file_path = os.path.join("data", "doc_lengths.json")
-        with open(file_path, "w") as file:
-            json.dump(doc_lengths, file, indent=2)
-        print(f"Document lengths saved to {file_path}.")
+    file_path = os.path.join("data", "doc_lengths.json")
+    with open(file_path, "w") as file:
+        json.dump(doc_lengths, file, indent=2)
+    print(f"Document lengths saved to {file_path}.")
 
-        file_path = os.path.join("data", "avg_doc_length.json")
-        with open(file_path, "w") as file:
-            json.dump({"avg_doc_length": avg_doc_length}, file)
-        print(f"Average document length saved to {file_path}.")
+    file_path = os.path.join("data", "avg_doc_length.json")
+    with open(file_path, "w") as file:
+        json.dump({"avg_doc_length": avg_doc_length}, file)
+    print(f"Average document length saved to {file_path}.")
 
     # Return the inverted index and document lengths
     return inverted_index, doc_lengths
 
 
-def compute_idf(inverted_index: dict[str, dict[str, int]], doc_count: int, save_to_file: bool = False) -> dict[str, float]:
+def compute_idf(inverted_index: dict[str, dict[str, int]], doc_count: int) -> dict[str, float]:
     """
     Compute the Inverse Document Frequency (IDF) for each token in the inverted index.
     
     Parameters:
         inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
         doc_count (int): The total number of documents in the corpus.
-        save_to_file (bool): Whether to save the IDF scores to a JSON file.
 
     Returns:
         dict: A dictionary mapping tokens to their IDF scores.
@@ -191,18 +188,17 @@ def compute_idf(inverted_index: dict[str, dict[str, int]], doc_count: int, save_
         df = len(doc_freqs)
         idf_scores[token] = math.log((doc_count - df + 0.5) / (df + 0.5) + 1) if df > 0 else 0
 
-    # Optionally save the inverted index to a JSON file
-    if save_to_file:
-        file_path = os.path.join("data", f"idf_scores.json")
-        with open(file_path, "w") as file:
-            json.dump(idf_scores, file, indent=2)
-        print(f"IDF scores saved to {file_path}.")
+    # Save the IDF scores to a JSON file
+    file_path = os.path.join("data", f"idf_scores.json")
+    with open(file_path, "w") as file:
+        json.dump(idf_scores, file, indent=2)
+    print(f"IDF scores saved to {file_path}.")
 
     # Return the IDF dictionary
     return idf_scores
 
 
-def build_tf_idf_index(inverted_index: dict[str, dict[str, int]], doc_lengths: dict[str, int], idf: dict[str, float], save_to_file: bool = False) -> tuple[dict[str, dict[str, float]], dict[str, float]]:
+def build_tf_idf_index(inverted_index: dict[str, dict[str, int]], doc_lengths: dict[str, int], idf: dict[str, float]) -> tuple[dict[str, dict[str, float]], dict[str, float]]:
     """
     Build a TF-IDF index from the inverted index and document lengths.
     
@@ -210,7 +206,6 @@ def build_tf_idf_index(inverted_index: dict[str, dict[str, int]], doc_lengths: d
         inverted_index (dict): The inverted index mapping terms to document IDs and their token frequencies.
         doc_lengths (dict): The document lengths mapping document IDs to their lengths.
         idf (dict): The IDF scores for each term.
-        save_to_file (bool): Whether to save the TF-IDF index to a JSON file.
 
     Returns:
         dict: The TF-IDF index mapping document IDs to tokens and their TF-IDF scores.
@@ -233,47 +228,42 @@ def build_tf_idf_index(inverted_index: dict[str, dict[str, int]], doc_lengths: d
                 norm_sq += tf_idf ** 2
         doc_norms[doc_id] = math.sqrt(norm_sq)
 
-    # Optionally save the TF-IDF index to a JSON file
-    if save_to_file:
-        file_path = os.path.join("data", f"tf_idf_index.json")
-        with open(file_path, "w") as file:
-            json.dump(tf_idf_index, file, indent=2)
-        print(f"TF-IDF index saved to {file_path}.")
-        file_path = os.path.join("data", f"doc_norms.json")
-        with open(file_path, "w") as file:
-            json.dump(doc_norms, file, indent=2)
-        print(f"Document norms saved to {file_path}.")
+    # Save the TF-IDF index to a JSON file
+    file_path = os.path.join("data", f"tf_idf_index.json")
+    with open(file_path, "w") as file:
+        json.dump(tf_idf_index, file, indent=2)
+    print(f"TF-IDF index saved to {file_path}.")
+    file_path = os.path.join("data", f"doc_norms.json")
+    with open(file_path, "w") as file:
+        json.dump(doc_norms, file, indent=2)
+    print(f"Document norms saved to {file_path}.")
 
     # Return the TF-IDF index and document norms
     return tf_idf_index, doc_norms
 
 
-def build_index(corpus_dir: str):
+def build_index():
     """
     Build the index for the corpus directory and save the inverted index, IDF scores, TF-IDF index, and document norms to file.
-    
-    Parameters:
-        corpus_dir (str): The directory containing the corpus data.
     """
 
     # Build the inverted index
     print("Building inverted index...")
-    inverted_index, doc_lengths = build_inverted_index(corpus_dir, save_to_file=True)
+    inverted_index, doc_lengths = build_inverted_index()
     print("Inverted index built successfully.")
 
     # Compute the IDF scores
     doc_count = len(doc_lengths)
     print("Computing IDF scores...")
-    idf_scores = compute_idf(inverted_index, doc_count, save_to_file=True)
+    idf_scores = compute_idf(inverted_index, doc_count)
     print("IDF scores computed successfully.")
 
     # Build the TF-IDF index
     # print("Building TF-IDF index...")
-    # tf_idf_index, doc_norms = build_tf_idf_index(inverted_index, doc_lengths, idf_scores, save_to_file=True)
+    # tf_idf_index, doc_norms = build_tf_idf_index(inverted_index, doc_lengths, idf_scores)
     # print("TF-IDF index built successfully.")
 
 
 if __name__ == "__main__":
-    # Build the index for the corpus directory
-    corpus_dir = "data/nasa_full_corpus"
-    build_index(corpus_dir)
+    # Build the index
+    build_index()

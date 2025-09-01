@@ -12,9 +12,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from .indexer.search import load_inverted_index, load_doc_lengths, load_idf_scores, load_doc_lookup, load_avg_doc_length, search_query, get_doc_metadata
 
+# Define the data directory and NASA API key
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../data")
 NASA_API_KEY = os.environ.get("NASA_API_KEY", "DEMO_KEY")
 
@@ -32,9 +34,11 @@ async def lifespan(app: FastAPI):
 
     yield
 
+
 # Create FastAPI app instance
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "../frontend/templates"))
+app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 
 
 @app.get("/")
@@ -97,6 +101,7 @@ def search_results(request: Request, query: str = Query(...), limit: int = 20, o
         }
     )
 
+
 @app.get("/api/search")
 def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_year: int = 1920, end_year: int = 2025, media_type: str = None, new_query: bool = False):
     if new_query:
@@ -152,6 +157,7 @@ def search_api(query: str = Query(...), limit: int = 20, offset: int = 0, start_
     paged_results = filtered_results[offset:offset + limit]
 
     return {"results": paged_results, "total_results": total_results}
+
 
 @app.get("/apod")
 async def get_apod():

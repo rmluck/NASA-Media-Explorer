@@ -15,7 +15,7 @@ from .indexer import preprocess_text
 BM25_K = 1.5
 BM25_B = 0.75
 
-# Define the data directory and paths
+# Define the data directory
 DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data")
 
 
@@ -138,7 +138,7 @@ def load_doc_lookup(file_path: str) -> dict[str, dict]:
 
 def score_query(query_tokens: list[str], inverted_index: dict[str, dict[str, float]], idf_scores: dict[str, float], doc_lengths: dict[str, float], avg_doc_length: float) -> list[tuple[str, float]]:
     """
-    Score the query against the TF-IDF index and return the ranked documents.
+    Score the query and return the ranked documents.
 
     Parameters:
         query_tokens (list): The list of tokens in the query.
