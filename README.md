@@ -110,19 +110,19 @@ Search for missions, astronauts, spacecraft, locations, or events. Examples: `ne
 
 Scroll through results with infinite loading. Hover thumbnails to view titles. Hover on video cards to view video preview. Badges indicate media type.
 
-![](/static/video/scroll.mp4)
+![](/static/video/scroll.gif)
 
 **Step 5: Filter Results**
 
 Use the year slider to narrow the timeline or choose media type (Image / Video) from the dropdown menu.
 
-![](/static/video/filters.mp4)
+![](/static/video/filters.gif)
 
 **Step 6: Explore Media**
 
 Click a result card to open the full-reoslution image or video along with further details and metadata information directly from NASA's library. Click "Download" button to open media in new tab.
 
-![](/static/video/modal.mp4)
+![](/static/video/modal.gif)
 
 ---
 
